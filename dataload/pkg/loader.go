@@ -72,5 +72,9 @@ func (c *CommandInfo) RunCSVLoader() error {
 			}
 		}
 	}
-	return csvloader.NewCSVLoader(filesList, c.db).Run()
+	lookUp, err := c.cmd.Flags().GetInt(LookUp)
+	if err != nil {
+		return err
+	}
+	return csvloader.NewCSVLoader(filesList, c.db, lookUp).Run()
 }

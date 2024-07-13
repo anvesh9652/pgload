@@ -15,6 +15,7 @@ const (
 	Schema   = "schema"
 	URL      = "url"
 	Reset    = "reset"
+	LookUp   = "lookup"
 )
 
 var rootCommand = cobra.Command{
@@ -53,4 +54,6 @@ func init() {
 
 	// Boolean flags
 	pflags.BoolP(Reset, "r", false, "reset tables if exists by default it's true")
+
+	pflags.IntP(LookUp, "l", 10, "look first n number of rows to find column types")
 }

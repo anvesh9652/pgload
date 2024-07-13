@@ -59,6 +59,10 @@ func (d *DB) EnsureTable(name string, tableSchema string) error {
 	return err
 }
 
+func (d *DB) InsertRecords(name string, records []map[string]any) error {
+	return nil
+}
+
 func (d *DB) SchemaName() string {
 	return d.schema
 }
