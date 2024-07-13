@@ -29,6 +29,10 @@ var rootCommand = cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
+		err = icmd.RunCSVLoader()
+		if err != nil {
+			log.Fatal(err)
+		}
 	},
 }
 
@@ -40,12 +44,13 @@ func Execute() {
 }
 
 func init() {
-	// intialize flags here later
-	pflags := rootCommand.PersistentFlags()
+	pflags := rootCommand.Flags()
 	pflags.StringP(User, "u", "postgres", "user name")
 	pflags.StringP(Password, "p", "", "password for given user name")
 	pflags.StringP(Database, "d", "postgres", "database name")
 	pflags.StringP(Schema, "s", "public", "schema name")
 	pflags.StringP(URL, "U", "localhost:5432", "connection string connect")
+
+	// Boolean flags
 	pflags.BoolP(Reset, "r", false, "reset tables if exists by default it's true")
 }

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/anvesh9652/side-projects/dataload/pkg/csvloader"
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -20,11 +21,16 @@ type CommandInfo struct {
 }
 
 func (c *CommandInfo) setUpDBClient() error {
-	flagsMapS := make(map[string]string)
-	flagsMapB := make(map[string]bool)
+	var (
+		err error
+
+		flagsMapS = make(map[string]string)
+		flagsMapB = make(map[string]bool)
+	)
 
 	flags := c.cmd.Flags()
 	flags.VisitAll(func(f *pflag.Flag) {
+		// we only need string and bool flag values
 		switch f.Value.Type() {
 		case "string":
 			flagsMapS[f.Name] = f.Value.String()
@@ -37,41 +43,13 @@ func (c *CommandInfo) setUpDBClient() error {
 		}
 	})
 
-	// connUrl, err := flags.GetString("url")
-	// if err != nil {
-	// 	return err
-	// }
-	// dbName, err := flags.GetString("database")
-	// if err != nil {
-	// 	return err
-	// }
-	// schema, err := flags.GetString("schema")
-	// if err != nil {
-	// 	return err
-	// }
-	// user, err := flags.GetString("user")
-	// if err != nil {
-	// 	return err
-	// }
-	// pass, err := flags.GetString("pass")
-	// if err != nil {
-	// 	return err
-	// }
-	// reset, err := flags.GetBool("reset")
-	// if err != nil {
-	// 	return err
-	// }
+	dbUrl := fmt.Sprintf(
+		"postgres://%s:%s@%s/%s?sslmode=disable", flagsMapS[User],
+		flagsMapS[Password], flagsMapS[URL], flagsMapS[Database],
+	)
 
-	dbUrl := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",
-		flagsMapS[User], flagsMapS[Password], flagsMapS[URL], flagsMapS[Database])
-	db, err := pgdb.NewPostgresDB(dbUrl, flagsMapS[Schema], !flagsMapB[Reset])
-	if err != nil {
-		return err
-	}
-	c.db = db
-	r, _ := flags.GetBool("reset")
-	fmt.Println(r)
-	// err = c.db.EnsureTable("test", "(name varchar)")
+	c.db, err = pgdb.NewPostgresDB(dbUrl, flagsMapS[Schema], !flagsMapB[Reset])
+	// c.db.EnsureTable("test", "(name varchar)")
 	return err
 }
 
@@ -94,7 +72,5 @@ func (c *CommandInfo) RunCSVLoader() error {
 			}
 		}
 	}
-	fmt.Println(filesList)
-	return nil
-	// return csvloader.NewCSVLoader(filesList, c.db).Run()
+	return csvloader.NewCSVLoader(filesList, c.db).Run()
 }

@@ -33,15 +33,26 @@ func NewPostgresDB(url string, schema string, reset bool) (*DB, error) {
 }
 
 func (d *DB) EnsureTable(name string, tableSchema string) error {
+	// to the check the schema exists
 	createQuery := fmt.Sprintf("CREATE TABLE %s.%s %s", d.schema, name, tableSchema)
 	_, err := d.dbConn.Exec(createQuery)
-	if err != nil {
-		if !strings.Contains(err.Error(), fmt.Sprintf(`schema "%s" does not exist`, d.schema)) {
-			return err
-		}
+	if err == nil {
+		return nil
+	}
+
+	errs := err.Error()
+	if strings.Contains(errs, fmt.Sprintf(`schema "%s" does not exist`, d.schema)) {
 		_, err := d.dbConn.Exec("CREATE SCHEMA " + d.schema)
 		if err != nil {
 			return err
+		}
+	}
+	if strings.Contains(errs, fmt.Sprintf(`relation "%s" already exists`, name)) {
+		if d.resetTable {
+			_, err := d.dbConn.Exec(fmt.Sprintf("DROP TABLE %s.%s", d.schema, name))
+			if err != nil {
+				return err
+			}
 		}
 	}
 	_, err = d.dbConn.Exec(createQuery)
