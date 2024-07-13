@@ -8,6 +8,15 @@ import (
 
 var version = "1.0.0"
 
+const (
+	User     = "user"
+	Password = "pass"
+	Database = "database"
+	Schema   = "schema"
+	URL      = "url"
+	Reset    = "reset"
+)
+
 var rootCommand = cobra.Command{
 	Use:     "load",
 	Short:   "loads data into postgresql",
@@ -16,7 +25,7 @@ var rootCommand = cobra.Command{
 	Version: version,
 	Run: func(cmd *cobra.Command, args []string) {
 		icmd := CommandInfo{cmd: cmd, args: args}
-		err := icmd.validateParamsAndSetupDB()
+		err := icmd.setUpDBClient()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -33,9 +42,10 @@ func Execute() {
 func init() {
 	// intialize flags here later
 	pflags := rootCommand.PersistentFlags()
-	pflags.StringP("user", "u", "postgres", "user name")
-	pflags.StringP("pass", "p", "", "password for given user name")
-	pflags.StringP("database", "d", "postgres", "database name")
-	pflags.StringP("schema", "s", "public", "schema name")
-	pflags.StringP("url", "U", "localhost:5432", "connection string connect")
+	pflags.StringP(User, "u", "postgres", "user name")
+	pflags.StringP(Password, "p", "", "password for given user name")
+	pflags.StringP(Database, "d", "postgres", "database name")
+	pflags.StringP(Schema, "s", "public", "schema name")
+	pflags.StringP(URL, "U", "localhost:5432", "connection string connect")
+	pflags.BoolP(Reset, "r", false, "reset tables if exists by default it's true")
 }
