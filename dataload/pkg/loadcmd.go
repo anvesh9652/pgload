@@ -6,7 +6,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var version = "1.0.0"
+var (
+	version = "1.0.0"
+	example = `1. load file1.csv file2.csv file3.csv
+2. load -u test -p 123 -d temp -s testing -U "localhost:123" file_2*.csv test1.csv dummy/*/*.csv 
+`
+)
 
 const (
 	User     = "user"
@@ -22,7 +27,7 @@ var rootCommand = cobra.Command{
 	Use:     "load",
 	Short:   "loads data into postgresql",
 	Long:    "Loads the provides csv files data into postgres sql tables",
-	Example: "",
+	Example: example,
 	Version: version,
 	Run: func(cmd *cobra.Command, args []string) {
 		icmd := CommandInfo{cmd: cmd, args: args}
