@@ -104,7 +104,7 @@ func getTableName(file string) string {
 	N := len(pathSplit)
 	// we are sure that we will always have proper csv file name
 	name := strings.Split(pathSplit[N-1], ".")[0]
-	if len(pathSplit) >= 1 {
+	if len(pathSplit) > 1 {
 		name = pathSplit[N-2] + "_" + name
 	}
 	return strings.ReplaceAll(name, "-", "_")
