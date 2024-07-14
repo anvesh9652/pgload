@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"log"
 	"path/filepath"
 	"strings"
 
@@ -37,14 +38,14 @@ func (c *CommandInfo) setUpDBClient() error {
 		case "bool":
 			val, err := flags.GetBool(f.Name)
 			if err != nil {
-				fmt.Printf("Error while retrieving %s flag value\n", f.Name)
+				log.Printf("Error while retrieving %s flag value\n", f.Name)
 			}
 			flagsMapB[f.Name] = val
 		}
 	})
 
 	url := flagsMapS[URL]
-	if flagsMapS[Port] != "5432" {
+	if flagsMapS[Port] != "" {
 		url = "localhost:" + flagsMapS[Port]
 	}
 

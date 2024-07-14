@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -61,15 +62,15 @@ func (c *CSVLoader) Run() error {
 		name := getTableName(file)
 		err = c.db.EnsureTable(name, fmt.Sprintf("(%s)", strings.Join(columnAndTypes, ", ")))
 		if err != nil {
-			fmt.Printf("File: %s, name: %s, Error: %s\n,", file, name, err.Error())
+			log.Printf("File: %s, name: %s, Error: %s\n,", file, name, err.Error())
 			return err
 		}
 		err = c.InsertRecordsInBatches(file)
 		if err != nil {
-			fmt.Printf("File: %s, name: %s, Error: %s\n,", file, name, err.Error())
+			log.Printf("File: %s, name: %s, Error: %s\n,", file, name, err.Error())
 			return err
 		}
-		fmt.Printf("successfully loaded: %s\n", file)
+		log.Printf("successfully loaded: %s\n", file)
 		return nil
 	})
 	return err

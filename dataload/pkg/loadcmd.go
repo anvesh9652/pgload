@@ -57,10 +57,10 @@ func init() {
 	pflags.StringP(Database, "d", "postgres", "database name")
 	pflags.StringP(Schema, "s", "public", "schema name")
 	pflags.StringP(URL, "u", "localhost:5432", "connection string to connect to the server")
-	pflags.StringP(Port, "p", "5432", "postgres server localhost port number")
+	pflags.StringP(Port, "p", "", "postgres server localhost port number")
 
 	// Boolean flags
 	pflags.BoolP(Reset, "r", false, "reset tables if exists by default set to true")
 
-	pflags.IntP(LookUp, "l", 10, "look first n number of rows to find column types")
+	pflags.IntP(LookUp, "l", 50, "look first n number of rows to find column types")
 }
