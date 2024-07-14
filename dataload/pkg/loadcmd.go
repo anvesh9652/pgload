@@ -9,8 +9,8 @@ import (
 var (
 	version = "1.0.0"
 	example = `1. load file1.csv file2.csv file3.csv
-2. load -u test -p 123 -d temp -s testing -U "localhost:123" file_2*.csv test1.csv dummy/*/*.csv 
-`
+2. load -p 54321 data.csv 
+3. load -U test -P 123 -d temp -s testing -u "localhost:123" file_2*.csv test1.csv dummy/*/*.csv`
 )
 
 const (
@@ -19,6 +19,7 @@ const (
 	Database = "database"
 	Schema   = "schema"
 	URL      = "url"
+	Port     = "port"
 	Reset    = "reset"
 	LookUp   = "lookup"
 )
@@ -51,14 +52,15 @@ func Execute() {
 
 func init() {
 	pflags := rootCommand.Flags()
-	pflags.StringP(User, "u", "postgres", "user name")
-	pflags.StringP(Password, "p", "", "password for given user name")
+	pflags.StringP(User, "U", "postgres", "user name")
+	pflags.StringP(Password, "P", "", "password for given user name")
 	pflags.StringP(Database, "d", "postgres", "database name")
 	pflags.StringP(Schema, "s", "public", "schema name")
-	pflags.StringP(URL, "U", "localhost:5432", "connection string connect")
+	pflags.StringP(URL, "u", "localhost:5432", "connection string to connect to the server")
+	pflags.StringP(Port, "p", "5432", "postgres server localhost port number")
 
 	// Boolean flags
-	pflags.BoolP(Reset, "r", false, "reset tables if exists by default it's true")
+	pflags.BoolP(Reset, "r", false, "reset tables if exists by default set to true")
 
 	pflags.IntP(LookUp, "l", 10, "look first n number of rows to find column types")
 }

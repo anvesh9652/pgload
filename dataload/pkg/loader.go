@@ -43,9 +43,14 @@ func (c *CommandInfo) setUpDBClient() error {
 		}
 	})
 
+	url := flagsMapS[URL]
+	if flagsMapS[Port] != "5432" {
+		url = "localhost:" + flagsMapS[Port]
+	}
+
 	dbUrl := fmt.Sprintf(
 		"postgres://%s:%s@%s/%s?sslmode=disable", flagsMapS[User],
-		flagsMapS[Password], flagsMapS[URL], flagsMapS[Database],
+		flagsMapS[Password], url, flagsMapS[Database],
 	)
 
 	c.db, err = pgdb.NewPostgresDB(dbUrl, flagsMapS[Schema], !flagsMapB[Reset])

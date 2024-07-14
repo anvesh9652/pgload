@@ -9,12 +9,19 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/anvesh9652/logstream/cmd/shared"
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb"
 )
 
 var BatchSize = 150
+
+var (
+	Integer = "INTEGER"
+	Float   = "FLOAT"
+	Text    = "TEXT"
+)
 
 type CSVLoader struct {
 	filesList  []string
@@ -51,12 +58,15 @@ func (c *CSVLoader) Run() error {
 			columnAndTypes = append(columnAndTypes, col+" "+tp)
 		}
 
-		err = c.db.EnsureTable(getTableName(file), fmt.Sprintf("(%s)", strings.Join(columnAndTypes, ", ")))
+		name := getTableName(file)
+		err = c.db.EnsureTable(name, fmt.Sprintf("(%s)", strings.Join(columnAndTypes, ", ")))
 		if err != nil {
+			fmt.Printf("File: %s, name: %s, Error: %s\n,", file, name, err.Error())
 			return err
 		}
 		err = c.InsertRecordsInBatches(file)
 		if err != nil {
+			fmt.Printf("File: %s, name: %s, Error: %s\n,", file, name, err.Error())
 			return err
 		}
 		fmt.Printf("successfully loaded: %s\n", file)
@@ -106,6 +116,9 @@ func getTableName(file string) string {
 	name := strings.Split(pathSplit[N-1], ".")[0]
 	if len(pathSplit) > 1 {
 		name = pathSplit[N-2] + "_" + name
+	} else if unicode.IsDigit(rune(name[0])) {
+		// we can't have a table name that start's with digit
+		name = "t" + name
 	}
 	return strings.ReplaceAll(name, "-", "_")
 }
@@ -134,7 +147,9 @@ func findColumnTypes(path string, lookupSize int) (map[string]string, error) {
 		typesCnt := map[string]int{}
 		for ix := range rowsCount {
 			val := lookUpRows[ix][i]
-			typesCnt[findType(val)] += 1
+			if val != "" {
+				typesCnt[findType(val)] += 1
+			}
 		}
 		types[col] = maxRecordedType(typesCnt)
 	}
@@ -147,6 +162,9 @@ func printJson(val any) {
 }
 
 func maxRecordedType(types map[string]int) string {
+	if types[Text] > 0 {
+		return Text
+	}
 	val, res := -1, "TEXT"
 	for k, v := range types {
 		if v > val {
@@ -158,12 +176,10 @@ func maxRecordedType(types map[string]int) string {
 
 func findType(val string) string {
 	if _, err := strconv.ParseInt(val, 10, 64); err == nil {
-		return "INTEGER"
+		return Integer
 	}
 	if _, err := strconv.ParseFloat(val, 64); err == nil {
-		return "FLOAT"
+		return Float
 	}
-	return "TEXT"
+	return Text
 }
-
-// path := "/Users/agali/Desktop/Work/Product/bills-data/mca-to-ea/2023-12-actual-usage-details-part-0.csv"

@@ -63,7 +63,7 @@ func (d *DB) InsertRecords(name string, records []map[string]any, columns []stri
 	if len(records) == 0 {
 		return nil
 	}
-	query := fmt.Sprintf("insert into %s.%s(%s) values ", d.schema, name, strings.Join(columns, ", "))
+	query := fmt.Sprintf("INSERT INTO %s.%s(%s) VALUES ", d.schema, name, strings.Join(columns, ", "))
 	var vals []any
 	params := 1
 	for _, row := range records {
@@ -77,11 +77,11 @@ func (d *DB) InsertRecords(name string, records []map[string]any, columns []stri
 	}
 	// remove (,) at the end
 	query = query[:len(query)-1]
-	st, err := d.dbConn.Prepare(query)
+	stmt, err := d.dbConn.Prepare(query)
 	if err != nil {
 		return errors.WithMessage(err, "failed to preparte statement")
 	}
-	_, err = st.Exec(vals...)
+	_, err = stmt.Exec(vals...)
 	return err
 }
 
