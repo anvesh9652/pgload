@@ -59,8 +59,31 @@ func (d *DB) EnsureTable(name string, tableSchema string) error {
 	return err
 }
 
-func (d *DB) InsertRecords(name string, records []map[string]any) error {
-	return nil
+func (d *DB) InsertRecords(name string, records []map[string]any, columns []string) error {
+	if len(records) == 0 {
+		return nil
+	}
+	query := fmt.Sprintf("insert into %s.%s(%s) values ", d.schema, name, strings.Join(columns, ", "))
+	var vals []any
+	params := 1
+	for _, row := range records {
+		var listParams []string
+		for _, col := range columns {
+			vals = append(vals, row[col])
+			listParams = append(listParams, fmt.Sprintf("$%d", params))
+			params += 1
+		}
+		query += fmt.Sprintf("(%s),", strings.Join(listParams, ","))
+	}
+	// remove (,) at the end
+	query = query[:len(query)-1]
+	fmt.Println(query)
+	st, err := d.dbConn.Prepare(query)
+	if err != nil {
+		return errors.WithMessage(err, "failed to preparte statement")
+	}
+	_, err = st.Exec(vals...)
+	return err
 }
 
 func (d *DB) SchemaName() string {

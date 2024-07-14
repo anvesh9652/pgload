@@ -49,10 +49,10 @@ func (c *CSVLoader) Run() error {
 		}
 		var columnAndTypes []string
 		for col, tp := range columnTypes {
-			columnAndTypes = append(columnAndTypes, col+","+tp)
+			columnAndTypes = append(columnAndTypes, col+" "+tp)
 		}
 
-		err = c.db.EnsureTable(file, fmt.Sprintf("(%s)", strings.Join(columnAndTypes, ", ")))
+		err = c.db.EnsureTable(getTableName(file), fmt.Sprintf("(%s)", strings.Join(columnAndTypes, ", ")))
 		if err != nil {
 			return err
 		}
@@ -82,7 +82,7 @@ func (c *CSVLoader) InsertRecordsInBatches(path string) error {
 		}
 		recordsMap = append(recordsMap, mapRecord)
 		if len(recordsMap) == BatchSize {
-			err = c.db.InsertRecords(tableName, recordsMap)
+			err = c.db.InsertRecords(tableName, recordsMap, headers)
 			if err != nil {
 				return err
 			}
@@ -90,7 +90,7 @@ func (c *CSVLoader) InsertRecordsInBatches(path string) error {
 		}
 	}
 	if len(recordsMap) > 0 {
-		return c.db.InsertRecords(tableName, recordsMap)
+		return c.db.InsertRecords(tableName, recordsMap, headers)
 	}
 	return nil
 }
@@ -143,7 +143,7 @@ func printJson(val any) {
 }
 
 func maxRecordedType(types map[string]int) string {
-	val, res := -1, "string"
+	val, res := -1, "varchar"
 	for k, v := range types {
 		if v > val {
 			val, res = v, k
@@ -159,7 +159,7 @@ func findType(val string) string {
 	if _, err := strconv.ParseFloat(val, 64); err == nil {
 		return "float"
 	}
-	return "string"
+	return "varchar"
 }
 
 // path := "/Users/agali/Desktop/Work/Product/bills-data/mca-to-ea/2023-12-actual-usage-details-part-0.csv"
