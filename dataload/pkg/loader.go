@@ -49,7 +49,6 @@ func (c *CommandInfo) setUpDBClient() error {
 	)
 
 	c.db, err = pgdb.NewPostgresDB(dbUrl, flagsMapS[Schema], !flagsMapB[Reset])
-	// c.db.EnsureTable("test", "(name varchar)")
 	return err
 }
 

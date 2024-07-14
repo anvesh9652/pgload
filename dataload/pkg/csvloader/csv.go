@@ -1,6 +1,7 @@
 package csvloader
 
 import (
+	"database/sql"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -14,8 +15,6 @@ import (
 )
 
 var BatchSize = 150
-
-// var LookupSize = 100
 
 type CSVLoader struct {
 	filesList  []string
@@ -56,7 +55,12 @@ func (c *CSVLoader) Run() error {
 		if err != nil {
 			return err
 		}
-		return c.InsertRecordsInBatches(file)
+		err = c.InsertRecordsInBatches(file)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("successfully loaded: %s\n", file)
+		return nil
 	})
 	return err
 }
@@ -78,7 +82,7 @@ func (c *CSVLoader) InsertRecordsInBatches(path string) error {
 			return err
 		}
 		for i, val := range headers {
-			mapRecord[val] = record[i]
+			mapRecord[val] = sql.NullString{String: record[i], Valid: record[i] != ""}
 		}
 		recordsMap = append(recordsMap, mapRecord)
 		if len(recordsMap) == BatchSize {
@@ -99,11 +103,11 @@ func getTableName(file string) string {
 	pathSplit := strings.Split(file, "/")
 	N := len(pathSplit)
 	// we are sure that we will always have proper csv file name
-	lastName := strings.Split(pathSplit[N-1], ".")[0]
-	if len(pathSplit) == 1 {
-		return lastName
+	name := strings.Split(pathSplit[N-1], ".")[0]
+	if len(pathSplit) >= 1 {
+		name = pathSplit[N-2] + "_" + name
 	}
-	return pathSplit[N-2] + "_" + lastName
+	return strings.ReplaceAll(name, "-", "_")
 }
 
 func findColumnTypes(path string, lookupSize int) (map[string]string, error) {
@@ -143,7 +147,7 @@ func printJson(val any) {
 }
 
 func maxRecordedType(types map[string]int) string {
-	val, res := -1, "varchar"
+	val, res := -1, "TEXT"
 	for k, v := range types {
 		if v > val {
 			val, res = v, k
@@ -154,12 +158,12 @@ func maxRecordedType(types map[string]int) string {
 
 func findType(val string) string {
 	if _, err := strconv.ParseInt(val, 10, 64); err == nil {
-		return "int"
+		return "INTEGER"
 	}
 	if _, err := strconv.ParseFloat(val, 64); err == nil {
-		return "float"
+		return "FLOAT"
 	}
-	return "varchar"
+	return "TEXT"
 }
 
 // path := "/Users/agali/Desktop/Work/Product/bills-data/mca-to-ea/2023-12-actual-usage-details-part-0.csv"

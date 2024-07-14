@@ -24,7 +24,7 @@ func NewPostgresDB(url string, schema string, reset bool) (*DB, error) {
 		return nil, errors.WithMessage(err, "failed to ping db")
 	}
 
-	fmt.Println("connected to database successfully")
+	fmt.Println("connected to database")
 	return &DB{
 		schema:     schema,
 		dbConn:     conn,
@@ -33,7 +33,7 @@ func NewPostgresDB(url string, schema string, reset bool) (*DB, error) {
 }
 
 func (d *DB) EnsureTable(name string, tableSchema string) error {
-	// to the check the schema exists
+	// to check if the schema exists
 	createQuery := fmt.Sprintf("CREATE TABLE %s.%s %s", d.schema, name, tableSchema)
 	_, err := d.dbConn.Exec(createQuery)
 	if err == nil {
@@ -77,7 +77,6 @@ func (d *DB) InsertRecords(name string, records []map[string]any, columns []stri
 	}
 	// remove (,) at the end
 	query = query[:len(query)-1]
-	fmt.Println(query)
 	st, err := d.dbConn.Prepare(query)
 	if err != nil {
 		return errors.WithMessage(err, "failed to preparte statement")

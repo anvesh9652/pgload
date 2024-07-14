@@ -10,4 +10,3 @@ func main() {
 	log.SetFlags(0)
 	pkg.Execute()
 }
-
