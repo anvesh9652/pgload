@@ -12,7 +12,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/anvesh9652/logstream/cmd/shared"
+	"github.com/anvesh9652/streamlogs/shared"
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb"
 )
 
