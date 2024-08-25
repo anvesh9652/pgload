@@ -12,8 +12,9 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/anvesh9652/streamlogs/shared"
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb"
+	"github.com/anvesh9652/side-projects/dataload/pkg/streams"
+	"github.com/anvesh9652/streamlogs/shared"
 )
 
 var BatchSize = 150
@@ -25,16 +26,19 @@ var (
 )
 
 type CSVLoader struct {
+	MaxConcurrentRuns int
+
 	filesList  []string
 	db         *pgdb.DB
 	lookUpSize int
 }
 
-func NewCSVLoader(files []string, db *pgdb.DB, look int) *CSVLoader {
+func NewCSVLoader(files []string, db *pgdb.DB, look int, maxRuns int) *CSVLoader {
 	return &CSVLoader{
-		filesList:  files,
-		db:         db,
-		lookUpSize: look,
+		filesList:         files,
+		db:                db,
+		lookUpSize:        look,
+		MaxConcurrentRuns: maxRuns,
 	}
 }
 
@@ -49,7 +53,7 @@ func NewCSVReaderAndColumns(path string) (*csv.Reader, []string, error) {
 }
 
 func (c *CSVLoader) Run() error {
-	err := shared.RunInParellel(10, c.filesList, func(file string) error {
+	err := shared.RunInParellel(c.MaxConcurrentRuns, c.filesList, func(file string) error {
 		columnTypes, err := findColumnTypes(file, c.lookUpSize)
 		if err != nil {
 			return err
@@ -65,7 +69,7 @@ func (c *CSVLoader) Run() error {
 			log.Printf("File: %s, name: %s, Error: %s\n,", file, name, err.Error())
 			return err
 		}
-		err = c.InsertRecordsInBatches(file)
+		err = c.InsertRecordsInBatches2(file)
 		if err != nil {
 			log.Printf("File: %s, name: %s, Error: %s\n,", file, name, err.Error())
 			return err
@@ -95,6 +99,52 @@ func (c *CSVLoader) InsertRecordsInBatches(path string) error {
 		for i, val := range headers {
 			mapRecord[val] = sql.NullString{String: record[i], Valid: record[i] != ""}
 		}
+		recordsMap = append(recordsMap, mapRecord)
+		if len(recordsMap) == BatchSize {
+			err = c.db.InsertRecords(tableName, recordsMap, headers)
+			if err != nil {
+				return err
+			}
+			recordsMap = []map[string]any{}
+		}
+	}
+	if len(recordsMap) > 0 {
+		return c.db.InsertRecords(tableName, recordsMap, headers)
+	}
+	return nil
+}
+
+func (c *CSVLoader) InsertRecordsInBatches2(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	headers, err := getHeaders(f)
+	if err != nil {
+		return err
+	}
+	fmt.Println("headers: ", len(headers))
+
+	asyncReader := streams.StarChunksStreaming(f)
+
+	tableName := getTableName(path)
+	recordsMap := []map[string]any{}
+
+	defer func() {
+		close(asyncReader.Err)
+	}()
+	for record := range asyncReader.Out {
+		if len(asyncReader.Err) > 0 {
+			return <-asyncReader.Err
+		}
+
+		mapRecord := map[string]any{}
+		for i, val := range headers {
+			mapRecord[val] = sql.NullString{String: record[i], Valid: record[i] != ""}
+		}
+		printJson(mapRecord)
 		recordsMap = append(recordsMap, mapRecord)
 		if len(recordsMap) == BatchSize {
 			err = c.db.InsertRecords(tableName, recordsMap, headers)
@@ -157,6 +207,7 @@ func findColumnTypes(path string, lookupSize int) (map[string]string, error) {
 	return types, nil
 }
 
+// For debuggin
 func printJson(val any) {
 	bt, _ := json.MarshalIndent(val, "", "  ")
 	fmt.Println(string(bt))
@@ -183,4 +234,13 @@ func findType(val string) string {
 		return Float
 	}
 	return Text
+}
+
+func getHeaders(r io.Reader) ([]string, error) {
+	csvR := csv.NewReader(r)
+	headers, err := csvR.Read()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read first line: %v", err)
+	}
+	return headers, nil
 }

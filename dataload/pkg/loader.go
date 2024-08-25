@@ -3,11 +3,13 @@ package pkg
 import (
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/anvesh9652/side-projects/dataload/pkg/csvloader"
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb"
+	"github.com/anvesh9652/side-projects/shared"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -81,5 +83,19 @@ func (c *CommandInfo) RunCSVLoader() error {
 	if err != nil {
 		return err
 	}
-	return csvloader.NewCSVLoader(filesList, c.db, lookUp).Run()
+	concurrentRuns := 10
+	// check if any file is larger, and reduce the concurrent runs
+	// and process the large in chucks to make it faster
+	for _, file := range filesList {
+		f, err := os.Open(file)
+		shared.Check(err, "failed to open file: %s", file)
+		info, err := f.Stat()
+		shared.Check(err, "error getting file stats: %s", file)
+		// 400 MB
+		if info.Size() > 100*1024*1024 {
+			concurrentRuns = 4
+			break
+		}
+	}
+	return csvloader.NewCSVLoader(filesList, c.db, lookUp, concurrentRuns).Run()
 }
