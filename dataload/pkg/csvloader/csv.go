@@ -144,7 +144,7 @@ func (c *CSVLoader) InsertRecordsInBatches2(path string) error {
 		for i, val := range headers {
 			mapRecord[val] = sql.NullString{String: record[i], Valid: record[i] != ""}
 		}
-		printJson(mapRecord)
+		// printJson(mapRecord)
 		recordsMap = append(recordsMap, mapRecord)
 		if len(recordsMap) == BatchSize {
 			err = c.db.InsertRecords(tableName, recordsMap, headers)

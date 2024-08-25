@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"os"
 	"sync"
 )
 
@@ -64,8 +65,7 @@ func StarChunksStreaming(r io.Reader) *AsyncStreams {
 			}
 
 			merged := append(leftOver, buff[:lastIndex]...)
-			fmt.Println(string(merged))
-			leftOver = buff[lastIndex:n]
+			leftOver = buff[lastIndex+1 : n]
 			as.in <- merged
 		}
 		close(as.in)
@@ -75,6 +75,51 @@ func StarChunksStreaming(r io.Reader) *AsyncStreams {
 		as.Process()
 	}()
 	return as
+}
+
+func MethodTest(r io.Reader) error {
+	buffSize := 10 * 1024
+	leftOver := make([]byte, 0, buffSize)
+	buff := make([]byte, buffSize)
+
+	tar, _ := os.Create("./test-rows.csv")
+	var rem []byte
+	for {
+		n, err := r.Read(buff)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		lastIndex := bytes.LastIndex(buff[:n], []byte("\n"))
+		if lastIndex == -1 {
+			leftOver = append(leftOver, buff[:n]...)
+			continue
+		}
+
+		merged := append(leftOver, buff[:lastIndex]...)
+		rmcopy := make([]byte, len(rem))
+		copy(rmcopy, rem)
+		rmcopy = append(rmcopy, buff[:lastIndex]...)
+		rem = append(rem, buff[lastIndex+1:n]...)
+		// fmt.Println(string(buff[:lastIndex]), "\n remaning", string(rem))
+
+		fmt.Println(string(rmcopy))
+		// fmt.Println("left:", string(leftOver), "\ndata:", string(merged))
+		leftOver = rem
+
+		fmt.Println("----")
+
+		// tar.Write(buff[:n])
+		// fmt.Println(string(merged), "------")
+		tar.Write(merged)
+		tar.Write([]byte("\n"))
+	}
+	if len(leftOver) > 0 {
+		tar.Write(leftOver)
+	}
+	return nil
 }
 
 func (a *AsyncStreams) Process() {
