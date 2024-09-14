@@ -1,6 +1,8 @@
 package csvloader
 
 import (
+	"bufio"
+	"bytes"
 	"database/sql"
 	"encoding/csv"
 	"encoding/json"
@@ -69,7 +71,7 @@ func (c *CSVLoader) Run() error {
 			log.Printf("File: %s, name: %s, Error: %s\n,", file, name, err.Error())
 			return err
 		}
-		err = c.InsertRecordsInBatches2(file)
+		err = c.InsertRecordsInBatches(file)
 		if err != nil {
 			log.Printf("File: %s, name: %s, Error: %s\n,", file, name, err.Error())
 			return err
@@ -120,18 +122,14 @@ func (c *CSVLoader) InsertRecordsInBatches2(path string) error {
 		return err
 	}
 	defer f.Close()
-
-	headers, err := getHeaders(f)
+	headers, r, err := getHeaders(f)
 	if err != nil {
 		return err
 	}
-	fmt.Println("headers: ", len(headers))
 
-	asyncReader := streams.StarChunksStreaming(f)
-
+	asyncReader := streams.StarChunksStreaming(r)
 	tableName := getTableName(path)
 	recordsMap := []map[string]any{}
-
 	defer func() {
 		close(asyncReader.Err)
 	}()
@@ -236,11 +234,23 @@ func findType(val string) string {
 	return Text
 }
 
-func getHeaders(r io.Reader) ([]string, error) {
-	csvR := csv.NewReader(r)
+func getHeaders(r io.Reader) ([]string, io.Reader, error) {
+	br := bufio.NewReader(r)
+	buff := bytes.NewBuffer(nil)
+	for {
+		line, prefix, err := br.ReadLine()
+		if err != nil {
+			return nil, nil, err
+		}
+		buff.Write(line)
+		if !prefix {
+			break
+		}
+	}
+	csvR := csv.NewReader(buff)
 	headers, err := csvR.Read()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read first line: %v", err)
+		return nil, nil, fmt.Errorf("failed to read first line: %v", err)
 	}
-	return headers, nil
+	return headers, br, nil
 }

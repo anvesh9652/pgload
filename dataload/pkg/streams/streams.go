@@ -40,9 +40,8 @@ func newAsyncReader(r io.Reader) *AsyncStreams {
 
 func StarChunksStreaming(r io.Reader) *AsyncStreams {
 	as := newAsyncReader(r)
-
 	buffSize := 10 * 1024
-	leftOver := make([]byte, 0, buffSize/4)
+	leftOver := make([]byte, 0, buffSize)
 	buff := make([]byte, buffSize)
 
 	go func() {
@@ -65,7 +64,12 @@ func StarChunksStreaming(r io.Reader) *AsyncStreams {
 			}
 
 			merged := append(leftOver, buff[:lastIndex]...)
-			leftOver = buff[lastIndex+1 : n]
+			leftOver = make([]byte, n-lastIndex-1)
+			copy(leftOver, buff[lastIndex+1:n])
+
+			// do not do this it's just a copy of buff's underlying array, so leftover will get
+			// change when buff get's updated in read
+			// leftOver = buff[lastIndex+1:n]
 			as.in <- merged
 		}
 		close(as.in)
@@ -81,9 +85,9 @@ func MethodTest(r io.Reader) error {
 	buffSize := 10 * 1024
 	leftOver := make([]byte, 0, buffSize)
 	buff := make([]byte, buffSize)
+	mp := map[int]int{}
 
 	tar, _ := os.Create("./test-rows.csv")
-	var rem []byte
 	for {
 		n, err := r.Read(buff)
 		if err != nil {
@@ -97,28 +101,33 @@ func MethodTest(r io.Reader) error {
 			leftOver = append(leftOver, buff[:n]...)
 			continue
 		}
-
 		merged := append(leftOver, buff[:lastIndex]...)
-		rmcopy := make([]byte, len(rem))
-		copy(rmcopy, rem)
-		rmcopy = append(rmcopy, buff[:lastIndex]...)
-		rem = append(rem, buff[lastIndex+1:n]...)
-		// fmt.Println(string(buff[:lastIndex]), "\n remaning", string(rem))
-
-		fmt.Println(string(rmcopy))
-		// fmt.Println("left:", string(leftOver), "\ndata:", string(merged))
-		leftOver = rem
-
-		fmt.Println("----")
-
-		// tar.Write(buff[:n])
-		// fmt.Println(string(merged), "------")
 		tar.Write(merged)
 		tar.Write([]byte("\n"))
+
+		leftOver = make([]byte, n-lastIndex-1)
+		copy(leftOver, buff[lastIndex+1:n])
+
+		b := bytes.NewBuffer(merged)
+		cr := csv.NewReader(b)
+		for {
+			row, err := cr.Read()
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+			}
+			mp[len(row)]++
+		}
+
+		// do not do this it's just a copy of buff's underlying array, so leftover will get
+		// change when buff get's updated in read
+		// leftOver = buff[lastIndex+1:n]
 	}
 	if len(leftOver) > 0 {
 		tar.Write(leftOver)
 	}
+	fmt.Println(mp)
 	return nil
 }
 
@@ -142,7 +151,9 @@ func (a *AsyncStreams) Process() {
 						a.Err <- err
 						return
 					}
-					fmt.Println("row: ", len(row))
+					// fmt.Println(len(row))
+					// todo: find out why value count different 63 vs 65
+					// but method test giving all 65, i guess when we read headers first, it's reading two extra columns from next row
 					a.Out <- row
 					a.pool.Put(buff)
 				}
