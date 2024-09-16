@@ -67,7 +67,7 @@ func StarChunksStreaming(r io.Reader) *AsyncStreams {
 			leftOver = make([]byte, n-lastIndex-1)
 			copy(leftOver, buff[lastIndex+1:n])
 
-			// do not do this it's just a copy of buff's underlying array, so leftover will get
+			// do not use this it's just a copy of buff's underlying array, so leftover will get
 			// change when buff get's updated in read
 			// leftOver = buff[lastIndex+1:n]
 			as.in <- merged
@@ -79,6 +79,42 @@ func StarChunksStreaming(r io.Reader) *AsyncStreams {
 		as.Process()
 	}()
 	return as
+}
+
+func (a *AsyncStreams) Process() {
+	for range a.items {
+		a.wg.Add(1)
+		go func() {
+			defer a.wg.Done()
+			for data := range a.in {
+				// buff := a.pool.Get().(*bytes.Buffer)
+				// buff.Reset()
+				// buff.Write(data)
+
+				// why the hell this is working but not pool one?
+				buff := bytes.NewBuffer(data)
+
+				csvReader := csv.NewReader(buff)
+				for {
+					row, err := csvReader.Read()
+					if err != nil {
+						if err == io.EOF {
+							break
+						}
+						// after getting first error we are closing chan, but other in progress
+						// go routines which encounter errors are also sending to this closed chan
+						// which causing panics, so find out
+						a.Err <- err
+						return
+					}
+					a.Out <- row
+					// a.pool.Put(buff)
+				}
+			}
+		}()
+	}
+	a.wg.Wait()
+	close(a.Out)
 }
 
 func MethodTest(r io.Reader) error {
@@ -129,37 +165,4 @@ func MethodTest(r io.Reader) error {
 	}
 	fmt.Println(mp)
 	return nil
-}
-
-func (a *AsyncStreams) Process() {
-	for range a.items {
-		a.wg.Add(1)
-		go func() {
-			defer a.wg.Done()
-			for data := range a.in {
-				buff := a.pool.Get().(*bytes.Buffer)
-				buff.Reset()
-				buff.Write(data)
-
-				csvReader := csv.NewReader(buff)
-				for {
-					row, err := csvReader.Read()
-					if err != nil {
-						if err == io.EOF {
-							break
-						}
-						a.Err <- err
-						return
-					}
-					// fmt.Println(len(row))
-					// todo: find out why value count different 63 vs 65
-					// but method test giving all 65, i guess when we read headers first, it's reading two extra columns from next row
-					a.Out <- row
-					a.pool.Put(buff)
-				}
-			}
-		}()
-	}
-	a.wg.Wait()
-	close(a.Out)
 }

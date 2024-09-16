@@ -1,8 +1,6 @@
 package csvloader
 
 import (
-	"bufio"
-	"bytes"
 	"database/sql"
 	"encoding/csv"
 	"encoding/json"
@@ -16,10 +14,11 @@ import (
 
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb"
 	"github.com/anvesh9652/side-projects/dataload/pkg/streams"
-	"github.com/anvesh9652/streamlogs/shared"
+	"github.com/anvesh9652/side-projects/shared"
+	stlogs "github.com/anvesh9652/streamlogs/shared"
 )
 
-var BatchSize = 150
+var BatchSize = 400
 
 var (
 	Integer = "INTEGER"
@@ -55,7 +54,7 @@ func NewCSVReaderAndColumns(path string) (*csv.Reader, []string, error) {
 }
 
 func (c *CSVLoader) Run() error {
-	err := shared.RunInParellel(c.MaxConcurrentRuns, c.filesList, func(file string) error {
+	err := stlogs.RunInParellel(c.MaxConcurrentRuns, c.filesList, func(file string) error {
 		columnTypes, err := findColumnTypes(file, c.lookUpSize)
 		if err != nil {
 			return err
@@ -122,7 +121,7 @@ func (c *CSVLoader) InsertRecordsInBatches2(path string) error {
 		return err
 	}
 	defer f.Close()
-	headers, r, err := getHeaders(f)
+	headers, r, err := shared.GetCSVHeaders(f)
 	if err != nil {
 		return err
 	}
@@ -142,7 +141,7 @@ func (c *CSVLoader) InsertRecordsInBatches2(path string) error {
 		for i, val := range headers {
 			mapRecord[val] = sql.NullString{String: record[i], Valid: record[i] != ""}
 		}
-		// printJson(mapRecord)
+		// shared.WriteToAsJson(mapRecord, w)
 		recordsMap = append(recordsMap, mapRecord)
 		if len(recordsMap) == BatchSize {
 			err = c.db.InsertRecords(tableName, recordsMap, headers)
@@ -232,25 +231,4 @@ func findType(val string) string {
 		return Float
 	}
 	return Text
-}
-
-func getHeaders(r io.Reader) ([]string, io.Reader, error) {
-	br := bufio.NewReader(r)
-	buff := bytes.NewBuffer(nil)
-	for {
-		line, prefix, err := br.ReadLine()
-		if err != nil {
-			return nil, nil, err
-		}
-		buff.Write(line)
-		if !prefix {
-			break
-		}
-	}
-	csvR := csv.NewReader(buff)
-	headers, err := csvR.Read()
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read first line: %v", err)
-	}
-	return headers, br, nil
 }
