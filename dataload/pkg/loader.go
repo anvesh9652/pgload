@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/anvesh9652/side-projects/dataload/pkg/csvloader"
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb"
@@ -61,6 +62,11 @@ func (c *CommandInfo) setUpDBClient() error {
 }
 
 func (c *CommandInfo) RunCSVLoader() error {
+	start := time.Now()
+	defer func() {
+		fmt.Println("took:", time.Since(start))
+	}()
+
 	var filesList []string
 	for _, arg := range c.args {
 		if strings.Contains(arg, "*") {
@@ -97,5 +103,9 @@ func (c *CommandInfo) RunCSVLoader() error {
 			break
 		}
 	}
+	if len(filesList) == 0 {
+		return errors.New("atleast provide one file")
+	}
+	fmt.Println(filesList)
 	return csvloader.NewCSVLoader(filesList, c.db, lookUp, concurrentRuns).Run()
 }

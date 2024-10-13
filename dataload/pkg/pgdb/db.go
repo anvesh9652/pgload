@@ -1,8 +1,10 @@
 package pgdb
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"strings"
 
 	_ "github.com/lib/pq"
@@ -83,6 +85,31 @@ func (d *DB) InsertRecords(name string, records []map[string]any, columns []stri
 	}
 	_, err = stmt.Exec(vals...)
 	return err
+}
+
+func (d *DB) CopyFrom(name string, r io.Reader) error {
+	ctx := context.Background()
+
+	conn, err := d.dbConn.Conn(ctx)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("hi there")
+	conn.Raw(func(driverConn any) error {
+		fmt.Printf("%T\n", driverConn)
+		// drc, err := driverConn.(*pg.Connector).Connect(ctx)
+		// if err != nil{
+		// 	return err
+		// }
+		// drc.
+		// switch x := driverConn.(type) {
+		// default:
+		// 	fmt.Println(x)
+		// }
+		return nil
+	})
+	return nil
 }
 
 func (d *DB) SchemaName() string {
