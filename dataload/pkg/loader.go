@@ -89,6 +89,13 @@ func (c *CommandInfo) RunCSVLoader() error {
 	if err != nil {
 		return err
 	}
+	typeSetting, err := c.cmd.Flags().GetString(Type)
+	if err != nil {
+		return err
+	}
+	if typeSetting != shared.Dynamic && typeSetting != shared.AllText {
+		return fmt.Errorf("unknown value for type %q", typeSetting)
+	}
 	concurrentRuns := 10
 	// check if any file is larger, and reduce the concurrent runs
 	// and process the large in chucks to make it faster
@@ -107,5 +114,5 @@ func (c *CommandInfo) RunCSVLoader() error {
 		return errors.New("atleast provide one file")
 	}
 	fmt.Println(filesList)
-	return csvloader.NewCSVLoader(filesList, c.db, lookUp, concurrentRuns).Run()
+	return csvloader.NewCSVLoader(filesList, c.db, lookUp, typeSetting, concurrentRuns).Run()
 }

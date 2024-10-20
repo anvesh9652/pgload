@@ -11,6 +11,11 @@ import (
 	"os"
 )
 
+const (
+	Dynamic = "dynamic"
+	AllText = "alltext"
+)
+
 func GetCSVHeaders(r io.Reader) ([]string, io.Reader, error) {
 	// didn't find the best way to get only first row
 	// no need to worry here if `br` reads more than first row

@@ -29,16 +29,18 @@ var (
 type CSVLoader struct {
 	MaxConcurrentRuns int
 
-	filesList  []string
-	db         *pgdb.DB
-	lookUpSize int
+	filesList   []string
+	db          *pgdb.DB
+	lookUpSize  int
+	typeSetting string
 }
 
-func NewCSVLoader(files []string, db *pgdb.DB, look int, maxRuns int) *CSVLoader {
+func NewCSVLoader(files []string, db *pgdb.DB, look int, t string, maxRuns int) *CSVLoader {
 	return &CSVLoader{
 		filesList:         files,
 		db:                db,
 		lookUpSize:        look,
+		typeSetting:       t,
 		MaxConcurrentRuns: maxRuns,
 	}
 }
@@ -55,7 +57,7 @@ func NewCSVReaderAndColumns(path string) (*csv.Reader, []string, error) {
 
 func (c *CSVLoader) Run() error {
 	err := stlogs.RunInParellel(c.MaxConcurrentRuns, c.filesList, func(file string) error {
-		columnTypes, err := findColumnTypes(file, c.lookUpSize)
+		columnTypes, err := c.findColumnTypes(file)
 		if err != nil {
 			return err
 		}
@@ -168,17 +170,25 @@ func getTableName(file string) string {
 		// we can't have a table name that start's with digit
 		name = "t" + name
 	}
-	return strings.ReplaceAll(name, "-", "_")
+	var final string
+	for _, r := range name {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
+			final += "_"
+			continue
+		}
+		final += string(r)
+	}
+	return final
 }
 
-func findColumnTypes(path string, lookupSize int) (map[string]string, error) {
+func (c *CSVLoader) findColumnTypes(path string) (map[string]string, error) {
 	csvr, headers, err := NewCSVReaderAndColumns(path)
 	if err != nil {
 		return nil, err
 	}
 
 	var lookUpRows [][]string
-	for range lookupSize {
+	for range c.lookUpSize {
 		record, err := csvr.Read()
 		if err != nil {
 			if err == io.EOF {
@@ -196,7 +206,7 @@ func findColumnTypes(path string, lookupSize int) (map[string]string, error) {
 		for ix := range rowsCount {
 			val := lookUpRows[ix][i]
 			if val != "" {
-				typesCnt[findType(val)] += 1
+				typesCnt[findType(val, c.typeSetting)] += 1
 			}
 		}
 		types[col] = maxRecordedType(typesCnt)
@@ -223,7 +233,10 @@ func maxRecordedType(types map[string]int) string {
 	return res
 }
 
-func findType(val string) string {
+func findType(val, typeSetting string) string {
+	if typeSetting == shared.AllText {
+		return Text
+	}
 	if _, err := strconv.ParseInt(val, 10, 64); err == nil {
 		return Integer
 	}

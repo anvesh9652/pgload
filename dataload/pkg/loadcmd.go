@@ -3,6 +3,7 @@ package pkg
 import (
 	"log"
 
+	"github.com/anvesh9652/side-projects/shared"
 	"github.com/spf13/cobra"
 )
 
@@ -22,6 +23,7 @@ const (
 	Port     = "port"
 	Reset    = "reset"
 	LookUp   = "lookup"
+	Type     = "type"
 )
 
 var rootCommand = cobra.Command{
@@ -58,6 +60,7 @@ func init() {
 	pflags.StringP(Schema, "s", "public", "schema name")
 	pflags.StringP(URL, "u", "localhost:5432", "connection string to connect to the server")
 	pflags.StringP(Port, "p", "", "postgres server localhost port number")
+	pflags.StringP(Type, "t", shared.Dynamic, "setting(dynamic, alltext) used to assign type for table columns")
 
 	// Boolean flags
 	pflags.BoolP(Reset, "r", false, "reset tables if exists by default set to true")
