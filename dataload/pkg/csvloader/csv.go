@@ -160,6 +160,9 @@ func (c *CSVLoader) InsertRecordsInBatches2(path string) error {
 }
 
 func getTableName(file string) string {
+	// tables names are getting created with lower case letters
+	// even we pass upper case letters
+	file = strings.ToLower(file)
 	pathSplit := strings.Split(file, "/")
 	N := len(pathSplit)
 	// we are sure that we will always have proper csv file name

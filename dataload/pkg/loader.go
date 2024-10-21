@@ -113,6 +113,6 @@ func (c *CommandInfo) RunCSVLoader() error {
 	if len(filesList) == 0 {
 		return errors.New("atleast provide one file")
 	}
-	fmt.Println(filesList)
+	fmt.Printf("number of files to be loaded: %d\n", len(filesList))
 	return csvloader.NewCSVLoader(filesList, c.db, lookUp, typeSetting, concurrentRuns).Run()
 }

@@ -35,8 +35,10 @@ func NewPostgresDB(url string, schema string, reset bool) (*DB, error) {
 }
 
 func (d *DB) EnsureTable(name string, tableSchema string) error {
-	// to check if the schema exists
+	// tables names are getting created with lower case letters
+	// even we pass upper case letters
 	createQuery := fmt.Sprintf("CREATE TABLE %s.%s %s", d.schema, name, tableSchema)
+	// to check if the schema exists
 	_, err := d.dbConn.Exec(createQuery)
 	if err == nil {
 		return nil
