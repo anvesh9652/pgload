@@ -78,5 +78,5 @@ func init() {
 	// Boolean flags
 	pflags.BoolP(Reset, "r", false, "reset tables if exists by default set to true")
 
-	pflags.IntP(LookUp, "l", 100, "look first n number of rows to find column types")
+	pflags.IntP(LookUp, "l", 400, "look first n number of rows to find column types")
 }
