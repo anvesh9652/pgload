@@ -3,7 +3,6 @@ package v2
 import (
     "context"
     "fmt"
-    "log"
     "os"
     "strings"
     "sync/atomic"
@@ -51,22 +50,22 @@ func (c *CSVLoader) Run(ctx context.Context) error {
         name := shared.GetTableName(file)
         columnTypes, err := csvutils.FindColumnTypes(file, c.lookUpSize, &c.typeSetting)
         if err != nil {
-            logError(file, name, err)
+            printError(file, name, err)
             return err
         }
         columnAndTypes := csvutils.BuildColumnTypeStr(columnTypes)
 
         err = c.db.EnsureTable(name, fmt.Sprintf("(%s)", strings.Join(columnAndTypes, ", ")))
         if err != nil {
-            logError(file, name, err)
+            printError(file, name, err)
             return err
         }
         rowsInserted, err := c.load(ctx, file, name)
         if err != nil {
-            logError(file, name, err)
+            printError(file, name, err)
             return err
         }
-        log.Printf("status=SUCCESS rows_inserted=%d file=%s\n", rowsInserted, file)
+        fmt.Printf("status=SUCCESS rows_inserted=%d file_size=%s file=%s\n", rowsInserted, shared.GetFileSize(file), file)
         return nil
     })
     fmt.Printf("msg=\"final load stats\" total=%d success=%d failed=%d\n", len(c.filesList), len(c.filesList)-int(failed), failed)
@@ -88,6 +87,6 @@ func (c *CSVLoader) load(ctx context.Context, f, table string) (int64, error) {
     return c.db.LoadIn(ctx, r, copyCmd)
 }
 
-func logError(f, name string, err error) {
-    log.Printf(`status=FAILED msg="unable to load" file=%q name=%q error=%q`, f, name, err.Error())
+func printError(f, name string, err error) {
+    fmt.Printf(`status=FAILED msg="unable to load" file=%q name=%q error=%q`, f, name, err.Error())
 }

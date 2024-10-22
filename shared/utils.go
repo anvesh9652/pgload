@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 	"unicode"
+
+	"github.com/dustin/go-humanize"
 )
 
 const (
@@ -56,4 +58,17 @@ func WriteToAsJson(data any, w io.Writer) {
 		log.Fatal(err, "write to json is failed")
 	}
 	_, _ = w.Write(append(bytes, '\n'))
+}
+
+func GetFileSize(path string) (res string) {
+	res = "unknown"
+	f, err := os.Open(path)
+	if err != nil {
+		return
+	}
+	fi, err := f.Stat()
+	if err != nil {
+		return
+	}
+	return strings.ReplaceAll(humanize.Bytes(uint64(fi.Size())), " ", "")
 }
