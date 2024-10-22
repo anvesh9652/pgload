@@ -1,14 +1,13 @@
 package shared
 
 import (
-	"bufio"
-	"bytes"
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"strings"
+	"unicode"
 )
 
 const (
@@ -16,27 +15,29 @@ const (
 	AllText = "alltext"
 )
 
-func GetCSVHeaders(r io.Reader) ([]string, io.Reader, error) {
-	// didn't find the best way to get only first row
-	// no need to worry here if `br` reads more than first row
-	br := bufio.NewReader(r)
-	buff := bytes.NewBuffer(nil)
-	for {
-		line, prefix, err := br.ReadLine()
-		if err != nil {
-			return nil, nil, err
-		}
-		buff.Write(line)
-		if !prefix {
-			break
-		}
+func GetTableName(file string) string {
+	// Table names are being created with lowercase letters
+	// even if we pass uppercase letters
+	file = strings.ToLower(file)
+	pathSplit := strings.Split(file, "/")
+	N := len(pathSplit)
+	// we are sure that we will always have proper csv file name
+	name := strings.Split(pathSplit[N-1], ".")[0]
+	if len(pathSplit) > 1 {
+		name = pathSplit[N-2] + "_" + name
+	} else if unicode.IsDigit(rune(name[0])) {
+		// we can't have a table name that start's with digit
+		name = "t" + name
 	}
-	csvR := csv.NewReader(buff)
-	headers, err := csvR.Read()
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read first line: %v", err)
+	var final string
+	for _, r := range name {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
+			final += "_"
+			continue
+		}
+		final += string(r)
 	}
-	return headers, br, nil
+	return final
 }
 
 func Check(err error, msg string, v ...any) {

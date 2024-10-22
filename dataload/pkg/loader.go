@@ -1,19 +1,22 @@
 package pkg
 
 import (
+	"context"
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
-	"github.com/anvesh9652/side-projects/dataload/pkg/csvloader"
-	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb"
+	csvloader "github.com/anvesh9652/side-projects/dataload/pkg/csvloader/v2"
+	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
 	"github.com/anvesh9652/side-projects/shared"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+)
+
+const (
+	concurrentRuns = 8
 )
 
 type CommandInfo struct {
@@ -21,10 +24,10 @@ type CommandInfo struct {
 	cmd  *cobra.Command
 	args []string
 
-	db *pgdb.DB
+	db *dbv2.DB
 }
 
-func (c *CommandInfo) setUpDBClient() error {
+func (c *CommandInfo) setUpDBClient(ctx context.Context) error {
 	var (
 		err error
 
@@ -57,22 +60,17 @@ func (c *CommandInfo) setUpDBClient() error {
 		flagsMapS[Password], url, flagsMapS[Database],
 	)
 
-	c.db, err = pgdb.NewPostgresDB(dbUrl, flagsMapS[Schema], !flagsMapB[Reset])
+	c.db, err = dbv2.NewPostgresDB(ctx, dbUrl, flagsMapS[Schema], !flagsMapB[Reset])
 	return err
 }
 
-func (c *CommandInfo) RunCSVLoader() error {
-	start := time.Now()
-	defer func() {
-		fmt.Println("took:", time.Since(start))
-	}()
-
+func (c *CommandInfo) RunCSVLoader(ctx context.Context) error {
 	var filesList []string
 	for _, arg := range c.args {
 		if strings.Contains(arg, "*") {
 			result, err := filepath.Glob(arg)
 			if err != nil {
-				return errors.Wrapf(err, "failed for glob patter: %s", arg)
+				return errors.Wrapf(err, "glob pattern matching failed: %s", arg)
 			}
 			for _, file := range result {
 				if strings.HasSuffix(file, ".csv") {
@@ -96,23 +94,8 @@ func (c *CommandInfo) RunCSVLoader() error {
 	if typeSetting != shared.Dynamic && typeSetting != shared.AllText {
 		return fmt.Errorf("unknown value for type %q", typeSetting)
 	}
-	concurrentRuns := 10
-	// check if any file is larger, and reduce the concurrent runs
-	// and process the large in chucks to make it faster
-	for _, file := range filesList {
-		f, err := os.Open(file)
-		shared.Check(err, "failed to open file: %s", file)
-		info, err := f.Stat()
-		shared.Check(err, "error getting file stats: %s", file)
-		// 400 MB
-		if info.Size() > 100*1024*1024 {
-			concurrentRuns = 4
-			break
-		}
-	}
 	if len(filesList) == 0 {
 		return errors.New("atleast provide one file")
 	}
-	fmt.Printf("number of files to be loaded: %d\n", len(filesList))
-	return csvloader.NewCSVLoader(filesList, c.db, lookUp, typeSetting, concurrentRuns).Run()
+	return csvloader.NewCSVLoader(filesList, c.db, lookUp, typeSetting, concurrentRuns).Run(ctx)
 }

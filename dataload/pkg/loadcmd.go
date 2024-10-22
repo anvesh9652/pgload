@@ -1,7 +1,11 @@
 package pkg
 
 import (
+	"context"
+	"fmt"
 	"log"
+	"os"
+	"time"
 
 	"github.com/anvesh9652/side-projects/shared"
 	"github.com/spf13/cobra"
@@ -33,15 +37,16 @@ var rootCommand = cobra.Command{
 	Example: example,
 	Version: version,
 	Run: func(cmd *cobra.Command, args []string) {
+		start := time.Now()
+		defer func() {
+			fmt.Println("took=", time.Since(start))
+		}()
 		icmd := CommandInfo{cmd: cmd, args: args}
-		err := icmd.setUpDBClient()
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = icmd.RunCSVLoader()
-		if err != nil {
-			panic(err)
-		}
+		ctx := context.Background()
+		err := icmd.setUpDBClient(ctx)
+		failOnError(err)
+		err = icmd.RunCSVLoader(ctx)
+		failOnError(err)
 	},
 }
 
@@ -50,6 +55,14 @@ func Execute() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func failOnError(err error) {
+	if err == nil {
+		return
+	}
+	fmt.Fprint(os.Stderr, err.Error())
+	os.Exit(1)
 }
 
 func init() {

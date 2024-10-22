@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/anvesh9652/side-projects/shared"
+	"github.com/anvesh9652/side-projects/shared/csvutils"
 )
 
 func TestAsyncReader(t *testing.T) {
@@ -38,7 +38,7 @@ func TestAsyncReader(t *testing.T) {
 	})
 	t.Run("test", func(t *testing.T) {
 		var err error
-		h, r, err := shared.GetCSVHeaders(f)
+		h, r, err := csvutils.GetCSVHeaders(f)
 		if err != nil {
 			t.FailNow()
 		}
