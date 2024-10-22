@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"unicode"
 
 	"github.com/dustin/go-humanize"
@@ -71,4 +72,38 @@ func GetFileSize(path string) (res string) {
 		return
 	}
 	return strings.ReplaceAll(humanize.Bytes(uint64(fi.Size())), " ", "")
+}
+
+func RunInParallel(numWorkers int, items []string, fn func(item string) error) error {
+	n := len(items)
+	workers := min(numWorkers, n)
+
+	var (
+		workerErrOnce sync.Once
+		workerErr     error
+
+		wg        = new(sync.WaitGroup)
+		itemsChan = make(chan string, n)
+	)
+
+	for range workers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for ctx := range itemsChan {
+				if err := fn(ctx); err != nil {
+					workerErrOnce.Do(func() {
+						workerErr = err
+					})
+				}
+			}
+		}()
+	}
+
+	for _, item := range items {
+		itemsChan <- item
+	}
+	close(itemsChan)
+	wg.Wait()
+	return workerErr
 }

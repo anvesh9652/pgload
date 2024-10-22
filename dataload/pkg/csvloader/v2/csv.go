@@ -1,16 +1,15 @@
 package v2
 
 import (
-    "context"
-    "fmt"
-    "os"
-    "strings"
-    "sync/atomic"
+	"context"
+	"fmt"
+	"os"
+	"strings"
+	"sync/atomic"
 
-    "github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
-    "github.com/anvesh9652/side-projects/shared"
-    "github.com/anvesh9652/side-projects/shared/csvutils"
-    stlogs "github.com/anvesh9652/streamlogs/shared"
+	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
+	"github.com/anvesh9652/side-projects/shared"
+	"github.com/anvesh9652/side-projects/shared/csvutils"
 )
 
 const (
@@ -39,7 +38,7 @@ func NewCSVLoader(files []string, db *dbv2.DB, look int, t string, maxRuns int) 
 
 func (c *CSVLoader) Run(ctx context.Context) error {
     var failed int32
-    err := stlogs.RunInParellel(c.MaxConcurrentRuns, c.filesList, func(file string) error {
+    err := shared.RunInParallel(c.MaxConcurrentRuns, c.filesList, func(file string) error {
         var err error
         defer func() {
             if err != nil {

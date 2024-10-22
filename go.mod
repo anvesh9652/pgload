@@ -13,8 +13,6 @@ require (
 	github.com/spf13/pflag v1.0.5
 )
 
-replace github.com/anvesh9652/streamlogs => /Users/agali/go-workspace/src/github.com/anvesh9652/streamlogs
-
 require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect

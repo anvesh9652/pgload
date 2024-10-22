@@ -12,7 +12,6 @@ import (
 	"github.com/anvesh9652/side-projects/dataload/pkg/streams"
 	"github.com/anvesh9652/side-projects/shared"
 	"github.com/anvesh9652/side-projects/shared/csvutils"
-	stlogs "github.com/anvesh9652/streamlogs/shared"
 )
 
 var BatchSize = 400
@@ -37,7 +36,7 @@ func NewCSVLoader(files []string, db *pgdb.DB, look int, t string, maxRuns int) 
 }
 
 func (c *CSVLoader) Run() error {
-	err := stlogs.RunInParellel(c.MaxConcurrentRuns, c.filesList, func(file string) error {
+	err := shared.RunInParallel(c.MaxConcurrentRuns, c.filesList, func(file string) error {
 		columnTypes, err := csvutils.FindColumnTypes(file, c.lookUpSize, &c.typeSetting)
 		if err != nil {
 			return err
