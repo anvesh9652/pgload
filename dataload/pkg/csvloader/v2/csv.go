@@ -69,7 +69,7 @@ func (c *CSVLoader) Run(ctx context.Context) error {
         log.Printf("status=SUCCESS rows_inserted=%d file=%s\n", rowsInserted, file)
         return nil
     })
-    fmt.Printf("msg=\"final load stats\" success=%d failed=%d\n", len(c.filesList)-int(failed), failed)
+    fmt.Printf("msg=\"final load stats\" total=%d success=%d failed=%d\n", len(c.filesList), len(c.filesList)-int(failed), failed)
     return err
 }
 
