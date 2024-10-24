@@ -11,8 +11,7 @@ func main() {
 	pkg.Execute()
 }
 
-
 /*
-Bugs: 
+Bugs:
 - running load immediately after deleting schema giving schema relation already exists error
 */
