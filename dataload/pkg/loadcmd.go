@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/anvesh9652/side-projects/shared"
 	"github.com/spf13/cobra"
@@ -37,10 +36,6 @@ var rootCommand = cobra.Command{
 	Example: example,
 	Version: version,
 	Run: func(cmd *cobra.Command, args []string) {
-		start := time.Now()
-		defer func() {
-			fmt.Println("took=", time.Since(start))
-		}()
 		icmd := CommandInfo{cmd: cmd, args: args}
 		ctx := context.Background()
 		err := icmd.setUpDBClient(ctx)

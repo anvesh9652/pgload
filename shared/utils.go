@@ -74,6 +74,22 @@ func GetFileSize(path string) (res string) {
 	return strings.ReplaceAll(humanize.Bytes(uint64(fi.Size())), " ", "")
 }
 
+func FormatNumber(n int64) string {
+	decimalPoint := 2
+	switch {
+	case n >= 1_000_000:
+		return fmt.Sprintf("%.*fM", decimalPoint, float64(n)/1_000_000)
+	case n >= 1_000:
+		if n%1000 == 0 {
+			return fmt.Sprintf("%dk", n/1000)
+		}
+		val := fmt.Sprintf("%.*f", decimalPoint, float64(n)/1_000)
+		return strings.TrimSuffix(val, "0") + "k"
+	default:
+		return fmt.Sprintf("%d", n)
+	}
+}
+
 func RunInParallel(numWorkers int, items []string, fn func(item string) error) error {
 	n := len(items)
 	workers := min(numWorkers, n)

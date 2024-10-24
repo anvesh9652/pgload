@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
 	"github.com/anvesh9652/side-projects/shared"
@@ -38,6 +39,8 @@ func NewCSVLoader(files []string, db *dbv2.DB, look int, t string, maxRuns int) 
 
 func (c *CSVLoader) Run(ctx context.Context) error {
 	var totalRowsInserted, failed int64
+
+	start := time.Now()
 	err := shared.RunInParallel(c.MaxConcurrentRuns, c.filesList, func(file string) error {
 		var err error
 		defer func() {
@@ -65,11 +68,12 @@ func (c *CSVLoader) Run(ctx context.Context) error {
 			return err
 		}
 		atomic.AddInt64(&totalRowsInserted, rowsInserted)
-		fmt.Printf("status=SUCCESS rows_inserted=%d file_size=%s file=%s\n", rowsInserted, shared.GetFileSize(file), file)
+		fmt.Printf("status=SUCCESS rows_inserted=%s file_size=%s file=%s\n",
+			shared.FormatNumber(rowsInserted), shared.GetFileSize(file), file)
 		return nil
 	})
-	fmt.Printf("msg=\"final load stats\" total=%d success=%d failed=%d total_rows_inserted=%d\n",
-		len(c.filesList), len(c.filesList)-int(failed), failed, totalRowsInserted)
+	fmt.Printf("msg=\"final load stats\" total=%d success=%d failed=%d total_rows_inserted=%s took=%s\n",
+		len(c.filesList), len(c.filesList)-int(failed), failed, shared.FormatNumber(totalRowsInserted), time.Since(start))
 	return err
 }
 
@@ -89,5 +93,5 @@ func (c *CSVLoader) load(ctx context.Context, f, table string) (int64, error) {
 }
 
 func printError(f, name string, err error) {
-	fmt.Printf(`status=FAILED msg="unable to load" file=%q name=%q error=%q`, f, name, err.Error())
+	fmt.Printf(`status=FAILED msg="unable to load" file=%q name=%q error=%q`+"\n", f, name, err.Error())
 }
