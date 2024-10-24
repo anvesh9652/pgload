@@ -32,8 +32,8 @@ const (
 
 var rootCommand = cobra.Command{
 	Use:     "load",
-	Short:   "loads data into postgresql",
-	Long:    "Loads the provides csv files data into postgres sql tables",
+	Short:   "Efficiently loads data into PostgreSQL",
+	Long:    "Loads the provided CSV files data into PostgreSQL tables, leveraging optimized processes for faster performance.",
 	Example: example,
 	Version: version,
 	Run: func(cmd *cobra.Command, args []string) {
