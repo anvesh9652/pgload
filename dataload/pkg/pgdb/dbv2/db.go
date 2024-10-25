@@ -62,11 +62,12 @@ func (d *DB) EnsureTable(name string, tableSchema string) error {
 		}
 	}
 	if strings.Contains(errs, fmt.Sprintf(`relation "%s" already exists`, name)) {
-		if d.resetTable {
-			_, err := d.dbConn.Exec(fmt.Sprintf("DROP TABLE %s.%s", d.schema, name))
-			if err != nil {
-				return err
-			}
+		if !d.resetTable {
+			return nil
+		}
+		_, err := d.dbConn.Exec(fmt.Sprintf("DROP TABLE %s.%s", d.schema, name))
+		if err != nil {
+			return err
 		}
 	}
 	_, err = d.dbConn.Exec(createQuery)

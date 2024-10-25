@@ -27,6 +27,7 @@ const (
 	Reset    = "reset"
 	LookUp   = "lookup"
 	Type     = "type"
+	Format   = "format"
 )
 
 var rootCommand = cobra.Command{
@@ -36,9 +37,8 @@ var rootCommand = cobra.Command{
 	Example: example,
 	Version: version,
 	Run: func(cmd *cobra.Command, args []string) {
-		icmd := CommandInfo{cmd: cmd, args: args}
 		ctx := context.Background()
-		err := icmd.setUpDBClient(ctx)
+		icmd, err := NewCommandInfo(ctx, cmd, args)
 		failOnError(err)
 		err = icmd.RunCSVLoader(ctx)
 		failOnError(err)
@@ -69,6 +69,7 @@ func init() {
 	pflags.StringP(URL, "u", "localhost:5432", "connection string to connect to the server")
 	pflags.StringP(Port, "p", "", "postgres server localhost port number")
 	pflags.StringP(Type, "t", shared.Dynamic, "setting(dynamic, alltext) used to assign type for table columns")
+	pflags.StringP(Format, "f", "csv", "the format of the data that was being loaded. supports(jsonl, csv)")
 
 	// Boolean flags
 	pflags.BoolP(Reset, "r", false, "reset tables if exists by default set to true")
