@@ -74,6 +74,11 @@ func (d *DB) EnsureTable(name string, tableSchema string) error {
 	return err
 }
 
+func (d *DB) DeleteTable(name string) error {
+	_, err := d.dbConn.Exec(fmt.Sprintf("DROP TABLE %s.%s", d.schema, name))
+	return err
+}
+
 func (d *DB) LoadIn(ctx context.Context, r io.Reader, copyCmd string) (int64, error) {
 	conn, err := d.dbConn.Conn(ctx)
 	if err != nil {

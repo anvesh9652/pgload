@@ -24,7 +24,7 @@ func GetTableName(file string) string {
 	file = strings.ToLower(file)
 	pathSplit := strings.Split(file, "/")
 	N := len(pathSplit)
-	// we are sure that we will always have proper csv file name
+	// we are sure that we will always have a proper file name that can be either .csv or .json
 	name := strings.Split(pathSplit[N-1], ".")[0]
 	if len(pathSplit) > 1 {
 		name = pathSplit[N-2] + "_" + name

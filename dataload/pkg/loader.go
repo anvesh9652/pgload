@@ -116,12 +116,8 @@ func (c *CommandInfo) RunLoader(ctx context.Context) error {
 }
 
 func (c *CommandInfo) RunFormatSpecificLoaders(ctx context.Context, cf, jf []string) error {
-	numOfFiles := len(cf) + len(jf)
-	if numOfFiles == 0 {
+	if len(cf)+len(jf) == 0 {
 		return errors.New("at least provide one file")
-	}
-	if x := concurrentRuns / 2; numOfFiles > x {
-		concurrentRuns = x
 	}
 
 	lookUp, typeSetting := c.flagsMapI[LookUp], c.flagsMapS[Type]

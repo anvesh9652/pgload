@@ -43,13 +43,15 @@ func (c *CSVLoader) Run(ctx context.Context) error {
 	start := time.Now()
 	err := shared.RunInParallel(c.MaxConcurrentRuns, c.filesList, func(file string) error {
 		var err error
+		name := shared.GetTableName(file)
+
 		defer func() {
 			if err != nil {
 				atomic.AddInt64(&failed, int64(1))
+				_ = c.db.DeleteTable(name)
 			}
 		}()
 
-		name := shared.GetTableName(file)
 		columnTypes, err := csvutils.FindColumnTypes(file, c.lookUpSize, &c.typeSetting)
 		if err != nil {
 			printError(file, name, err)
