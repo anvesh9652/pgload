@@ -40,7 +40,7 @@ var rootCommand = cobra.Command{
 		ctx := context.Background()
 		icmd, err := NewCommandInfo(ctx, cmd, args)
 		failOnError(err)
-		err = icmd.RunCSVLoader(ctx)
+		err = icmd.RunLoader(ctx)
 		failOnError(err)
 	},
 }

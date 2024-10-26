@@ -13,11 +13,12 @@ import (
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
 	"github.com/anvesh9652/side-projects/shared"
 	"github.com/pkg/errors"
+	"github.com/sourcegraph/conc/pool"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-const (
+var (
 	concurrentRuns = 8
 )
 
@@ -86,8 +87,8 @@ func NewCommandInfo(ctx context.Context, cmd *cobra.Command, args []string) (*Co
 	return c, err
 }
 
-func (c *CommandInfo) RunCSVLoader(ctx context.Context) error {
-	var filesList []string
+func (c *CommandInfo) RunLoader(ctx context.Context) error {
+	var csvFiles, jsonFiles []string
 	for _, arg := range c.args {
 		if strings.Contains(arg, "*") {
 			result, err := filepath.Glob(arg)
@@ -96,21 +97,50 @@ func (c *CommandInfo) RunCSVLoader(ctx context.Context) error {
 			}
 			for _, file := range result {
 				if strings.HasSuffix(file, ".csv") {
-					filesList = append(filesList, file)
+					csvFiles = append(csvFiles, file)
+				}
+				if strings.HasSuffix(file, ".json") {
+					jsonFiles = append(jsonFiles, file)
 				}
 			}
 		} else {
 			if strings.HasSuffix(arg, ".csv") {
-				filesList = append(filesList, arg)
+				csvFiles = append(csvFiles, arg)
+			}
+			if strings.HasSuffix(arg, ".json") {
+				jsonFiles = append(jsonFiles, arg)
 			}
 		}
 	}
+	return c.RunFormatSpecificLoaders(ctx, csvFiles, jsonFiles)
+}
+
+func (c *CommandInfo) RunFormatSpecificLoaders(ctx context.Context, cf, jf []string) error {
+	numOfFiles := len(cf) + len(jf)
+	if numOfFiles == 0 {
+		return errors.New("at least provide one file")
+	}
+	if x := concurrentRuns / 2; numOfFiles > x {
+		concurrentRuns = x
+	}
+
 	lookUp, typeSetting := c.flagsMapI[LookUp], c.flagsMapS[Type]
 	if typeSetting != shared.Dynamic && typeSetting != shared.AllText {
 		return fmt.Errorf("unknown value for type %q", typeSetting)
 	}
-	if len(filesList) == 0 {
-		return errors.New("atleast provide one file")
+
+	pool := pool.New().WithErrors()
+	if len(cf) > 0 {
+		pool.Go(func() error {
+			return csvloader.NewCSVLoader(cf, c.db, lookUp, typeSetting, concurrentRuns).Run(ctx)
+		})
 	}
-	return csvloader.NewCSVLoader(filesList, c.db, lookUp, typeSetting, concurrentRuns).Run(ctx)
+	if len(jf) > 0 {
+		pool.Go(func() error {
+			fmt.Println("running for json files")
+			return nil
+		})
+	}
+
+	return pool.Wait()
 }
