@@ -44,7 +44,7 @@ func New(files []string, db *dbv2.DB, concurrency, lookUp int, t string) *JsonLo
 	}
 }
 
-func (j *JsonLoader) Run(ctx context.Context) error {
+func (j *JsonLoader) Run(ctx context.Context) (string, error) {
 	var totalRowsInserted, failed int64
 	start := time.Now()
 
@@ -97,9 +97,9 @@ func (j *JsonLoader) Run(ctx context.Context) error {
 		return nil
 	})
 
-	fmt.Printf("msg=\"final load stats\"  data_format=%q total=%d success=%d failed=%d total_rows_inserted=%s took=%s\n",
+	msg := fmt.Sprintf(`msg="final load stats" data_format=%q total=%d success=%d failed=%d total_rows_inserted=%s took=%s`,
 		"JSONL", len(j.filesList), len(j.filesList)-int(failed), failed, shared.FormatNumber(totalRowsInserted), time.Since(start))
-	return err
+	return msg, err
 }
 
 func convertJsonlToCSV(w io.Writer, file string, cols []string) error {

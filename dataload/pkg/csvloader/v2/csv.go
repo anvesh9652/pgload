@@ -37,7 +37,7 @@ func NewCSVLoader(files []string, db *dbv2.DB, look int, t string, maxRuns int) 
 	}
 }
 
-func (c *CSVLoader) Run(ctx context.Context) error {
+func (c *CSVLoader) Run(ctx context.Context) (string, error) {
 	var totalRowsInserted, failed int64
 
 	start := time.Now()
@@ -74,9 +74,9 @@ func (c *CSVLoader) Run(ctx context.Context) error {
 			shared.FormatNumber(rowsInserted), shared.GetFileSize(file), file)
 		return nil
 	})
-	fmt.Printf("msg=\"final load stats\" total=%d success=%d failed=%d total_rows_inserted=%s took=%s\n",
-		len(c.filesList), len(c.filesList)-int(failed), failed, shared.FormatNumber(totalRowsInserted), time.Since(start))
-	return err
+	msg := fmt.Sprintf(`msg="final load stats" data_format=%q total=%d success=%d failed=%d total_rows_inserted=%s took=%s`,
+		"CSV", len(c.filesList), len(c.filesList)-int(failed), failed, shared.FormatNumber(totalRowsInserted), time.Since(start))
+	return msg, err
 }
 
 func (c *CSVLoader) load(ctx context.Context, f, table string) (int64, error) {

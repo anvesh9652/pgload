@@ -6,6 +6,7 @@ import (
 	"log"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	builterr "errors"
 
@@ -126,17 +127,31 @@ func (c *CommandInfo) RunFormatSpecificLoaders(ctx context.Context, cf, jf []str
 		return fmt.Errorf("unknown value for type %q", typeSetting)
 	}
 
+	mu := new(sync.Mutex)
+	msgs := []string{}
 	pool := pool.New().WithErrors()
 	if len(cf) > 0 {
 		pool.Go(func() error {
-			return csvloader.NewCSVLoader(cf, c.db, lookUp, typeSetting, concurrentRuns).Run(ctx)
+			msg, err := csvloader.NewCSVLoader(cf, c.db, lookUp, typeSetting, concurrentRuns).Run(ctx)
+			mu.Lock()
+			msgs = append(msgs, msg)
+			mu.Unlock()
+			return err
 		})
 	}
 	if len(jf) > 0 {
 		pool.Go(func() error {
-			return jsonloader.New(jf, c.db, concurrentRuns, lookUp, typeSetting).Run(ctx)
+			msg, err := jsonloader.New(jf, c.db, concurrentRuns, lookUp, typeSetting).Run(ctx)
+			mu.Lock()
+			msgs = append(msgs, msg)
+			mu.Unlock()
+			return err
 		})
 	}
 
-	return pool.Wait()
+	if err := pool.Wait(); err != nil {
+		return err
+	}
+	fmt.Println(strings.Join(msgs, "\n"))
+	return nil
 }
