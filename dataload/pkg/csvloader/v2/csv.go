@@ -95,5 +95,5 @@ func (c *CSVLoader) load(ctx context.Context, f, table string) (int64, error) {
 }
 
 func printError(f, name string, err error) {
-	fmt.Printf(`status=FAILED msg="unable to load" file=%q name=%q error=%q`+"\n", f, name, err.Error())
+	fmt.Printf(`status=FAILED data_format="CSV" msg="unable to load" file=%q name=%q error=%q`+"\n", f, name, err.Error())
 }

@@ -9,13 +9,8 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
 	"github.com/anvesh9652/side-projects/shared"
-)
-
-var (
-	Integer = "INTEGER"
-	Float   = "FLOAT"
-	Text    = "TEXT"
 )
 
 func NewCSVReaderAndColumns(path string) (*csv.Reader, []string, error) {
@@ -69,10 +64,10 @@ func FindColumnTypes(path string, lookUpSize int, typeSetting *string) (map[stri
 }
 
 func maxRecordedType(types map[string]int) string {
-	if types[Text] > 0 {
-		return Text
+	if types[dbv2.Text] > 0 {
+		return dbv2.Text
 	}
-	val, res := -1, Text
+	val, res := -1, dbv2.Text
 	for k, v := range types {
 		if v > val {
 			val, res = v, k
@@ -83,16 +78,16 @@ func maxRecordedType(types map[string]int) string {
 
 func findType(val string, typeSetting *string) string {
 	if typeSetting != nil && *typeSetting == shared.AllText {
-		return Text
+		return dbv2.Text
 	}
 
 	if _, err := strconv.ParseInt(val, 10, 64); err == nil {
-		return Integer
+		return dbv2.Integer
 	}
 	if _, err := strconv.ParseFloat(val, 64); err == nil {
-		return Float
+		return dbv2.Float
 	}
-	return Text
+	return dbv2.Text
 }
 
 func GetCSVHeaders(r io.Reader) ([]string, io.Reader, error) {

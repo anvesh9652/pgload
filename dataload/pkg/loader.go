@@ -10,6 +10,7 @@ import (
 	builterr "errors"
 
 	csvloader "github.com/anvesh9652/side-projects/dataload/pkg/csvloader/v2"
+	"github.com/anvesh9652/side-projects/dataload/pkg/jsonloader"
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
 	"github.com/anvesh9652/side-projects/shared"
 	"github.com/pkg/errors"
@@ -133,8 +134,7 @@ func (c *CommandInfo) RunFormatSpecificLoaders(ctx context.Context, cf, jf []str
 	}
 	if len(jf) > 0 {
 		pool.Go(func() error {
-			fmt.Println("running for json files")
-			return nil
+			return jsonloader.New(jf, c.db, concurrentRuns, lookUp, typeSetting).Run(ctx)
 		})
 	}
 

@@ -25,7 +25,9 @@ func GetTableName(file string) string {
 	pathSplit := strings.Split(file, "/")
 	N := len(pathSplit)
 	// we are sure that we will always have a proper file name that can be either .csv or .json
-	name := strings.Split(pathSplit[N-1], ".")[0]
+	// so no need to have any checks around idx
+	idx := strings.LastIndex(pathSplit[N-1], ".")
+	name := pathSplit[N-1][:idx]
 	if len(pathSplit) > 1 {
 		name = pathSplit[N-2] + "_" + name
 	} else if unicode.IsDigit(rune(name[0])) {

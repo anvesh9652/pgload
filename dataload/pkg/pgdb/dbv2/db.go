@@ -12,6 +12,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	Integer = "INTEGER"
+	Float   = "FLOAT"
+	Text    = "TEXT"
+	Object  = "JSON"
+)
+
 type DB struct {
 	dbConn     *sqlx.DB
 	schema     string

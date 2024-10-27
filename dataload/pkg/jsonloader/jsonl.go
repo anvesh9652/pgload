@@ -3,16 +3,23 @@ package jsonloader
 import (
 	"context"
 	"encoding/csv"
-	"encoding/json"
+
+	// "encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
 	"github.com/anvesh9652/side-projects/shared"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/sourcegraph/conc/pool"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type row map[string]any
 
@@ -38,22 +45,28 @@ func New(files []string, db *dbv2.DB, concurrency, lookUp int, t string) *JsonLo
 }
 
 func (j *JsonLoader) Run(ctx context.Context) error {
+	var totalRowsInserted, failed int64
+	start := time.Now()
+
 	err := shared.RunInParallel(j.maxConcurrency, j.filesList, func(file string) error {
 		var err error
 
 		name := shared.GetTableName(file)
 		defer func() {
 			if err != nil {
+				atomic.AddInt64(&failed, int64(1))
 				_ = j.db.DeleteTable(name)
 			}
 		}()
 		colsTypes, cols, err := j.findTypesAndGetCols(file)
 		if err != nil {
+			printError(file, name, err)
 			return err
 		}
 
 		err = j.db.EnsureTable(name, fmt.Sprintf("(%s)", strings.Join(colsTypes, ", ")))
 		if err != nil {
+			printError(file, name, err)
 			return err
 		}
 
@@ -71,14 +84,21 @@ func (j *JsonLoader) Run(ctx context.Context) error {
 
 		rowsInserted, err := j.db.LoadIn(ctx, pr, copyCmd)
 		if err != nil {
+			printError(file, name, err)
 			return err
 		}
 		if err = p.Wait(); err != nil {
+			printError(file, name, err)
 			return err
 		}
-		fmt.Println(rowsInserted)
+		atomic.AddInt64(&totalRowsInserted, rowsInserted)
+		fmt.Printf("status=SUCCESS rows_inserted=%s file_size=%s file=%s\n",
+			shared.FormatNumber(rowsInserted), shared.GetFileSize(file), file)
 		return nil
 	})
+
+	fmt.Printf("msg=\"final load stats\"  data_format=%q total=%d success=%d failed=%d total_rows_inserted=%s took=%s\n",
+		"JSONL", len(j.filesList), len(j.filesList)-int(failed), failed, shared.FormatNumber(totalRowsInserted), time.Since(start))
 	return err
 }
 
@@ -111,7 +131,23 @@ func convertJsonlToCSV(w io.Writer, file string, cols []string) error {
 }
 
 func toString(val any) string {
-	return ""
+	switch t := val.(type) {
+	case int:
+		return strconv.Itoa(t)
+	case float64:
+		return fmt.Sprintf("%f", t)
+	// todo: why this isn't working by using this?
+	// case string:
+	// 	return t
+	case any:
+		bt, _ := json.Marshal(t)
+		return string(bt)
+	case nil:
+		return ""
+	default:
+		fmt.Println("entered into default for json files")
+		return fmt.Sprintf("%s", val)
+	}
 }
 
 func (j *JsonLoader) findTypesAndGetCols(file string) ([]string, []string, error) {
@@ -144,7 +180,7 @@ func (j *JsonLoader) findTypesAndGetCols(file string) ([]string, []string, error
 	for header := range headers {
 		colsList = append(colsList, header)
 		if j.typeSetting == shared.AllText {
-			types = append(types, header+", TEXT")
+			types = append(types, header+" "+dbv2.Text)
 			continue
 		}
 
@@ -154,7 +190,7 @@ func (j *JsonLoader) findTypesAndGetCols(file string) ([]string, []string, error
 			uniqueTypes[getType(val)]++
 		}
 
-		types = append(types, header+", "+maxRecordedType(uniqueTypes))
+		types = append(types, header+" "+maxRecordedType(uniqueTypes))
 	}
 	return types, colsList, nil
 }
@@ -162,15 +198,27 @@ func (j *JsonLoader) findTypesAndGetCols(file string) ([]string, []string, error
 func getType(val any) string {
 	switch val.(type) {
 	case float64, int:
-		return "DECIMAL"
-	case []any, any:
-		return "OBJECT"
+		return dbv2.Float
+	case any:
+		return dbv2.Object
 	default:
-		return "TEXT"
+		return dbv2.Text
 	}
 }
 
-func maxRecordedType(map[string]int) string {
-	// todo: do this later
-	return "TEXT"
+func maxRecordedType(types map[string]int) string {
+	if types[dbv2.Text] > 0 {
+		return dbv2.Text
+	}
+	val, res := -1, dbv2.Text
+	for k, v := range types {
+		if v > val {
+			val, res = v, k
+		}
+	}
+	return res
+}
+
+func printError(f, name string, err error) {
+	fmt.Printf(`status=FAILED data_format="JSONL" msg="unable to load" file=%q name=%q error=%q`+"\n", f, name, err.Error())
 }
