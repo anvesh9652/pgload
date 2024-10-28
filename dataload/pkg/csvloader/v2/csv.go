@@ -3,6 +3,7 @@ package v2
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -64,7 +65,13 @@ func (c *CSVLoader) Run(ctx context.Context) (string, error) {
 			printError(file, name, err)
 			return err
 		}
-		rowsInserted, err := c.load(ctx, file, name)
+		f, err := os.Open(file)
+		if err != nil {
+			printError(file, name, err)
+			return err
+		}
+		defer f.Close()
+		rowsInserted, err := LoadCSV(ctx, f, name, c.db)
 		if err != nil {
 			printError(file, name, err)
 			return err
@@ -79,19 +86,15 @@ func (c *CSVLoader) Run(ctx context.Context) (string, error) {
 	return msg, err
 }
 
-func (c *CSVLoader) load(ctx context.Context, f, table string) (int64, error) {
-	file, err := os.Open(f)
-	if err != nil {
-		return 0, err
-	}
-	headers, r, err := csvutils.GetCSVHeaders(file)
+func LoadCSV(ctx context.Context, f io.Reader, table string, db *dbv2.DB) (int64, error) {
+	headers, r, err := csvutils.GetCSVHeaders(f)
 	if err != nil {
 		return 0, err
 	}
 	copyCmd := fmt.Sprintf(`COPY %s.%s(%s) FROM STDIN with DELIMITER %s %s`,
-		c.db.Schema(), table, strings.Join(headers, ", "), Delimiter, DataFormat,
+		db.Schema(), table, strings.Join(headers, ", "), Delimiter, DataFormat,
 	)
-	return c.db.LoadIn(ctx, r, copyCmd)
+	return db.LoadIn(ctx, r, copyCmd)
 }
 
 func printError(f, name string, err error) {

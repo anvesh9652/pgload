@@ -3,8 +3,7 @@ package jsonloader
 import (
 	"context"
 	"encoding/csv"
-
-	// "encoding/json"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -13,13 +12,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	csv2 "github.com/anvesh9652/side-projects/dataload/pkg/csvloader/v2"
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
 	"github.com/anvesh9652/side-projects/shared"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/sourcegraph/conc/pool"
 )
 
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
+// 	jsoniter "github.com/json-iterator/go"
+// var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type row map[string]any
 
@@ -78,11 +78,7 @@ func (j *JsonLoader) Run(ctx context.Context) (string, error) {
 			return convertJsonlToCSV(pw, file, cols)
 		})
 
-		copyCmd := fmt.Sprintf(`COPY %s.%s(%s) FROM STDIN with DELIMITER %s %s`,
-			j.db.Schema(), name, strings.Join(cols, ", "), "','", "CSV",
-		)
-
-		rowsInserted, err := j.db.LoadIn(ctx, pr, copyCmd)
+		rowsInserted, err := csv2.LoadCSV(ctx, pr, name, j.db)
 		if err != nil {
 			printError(file, name, err)
 			return err
@@ -103,7 +99,6 @@ func (j *JsonLoader) Run(ctx context.Context) (string, error) {
 }
 
 func convertJsonlToCSV(w io.Writer, file string, cols []string) error {
-
 	f, err := os.Open(file)
 	if err != nil {
 		return err
@@ -112,6 +107,11 @@ func convertJsonlToCSV(w io.Writer, file string, cols []string) error {
 
 	cw := csv.NewWriter(w)
 	defer cw.Flush()
+
+	// write cols first
+	if err = cw.Write(cols); err != nil {
+		return err
+	}
 
 	dec := json.NewDecoder(f)
 	for dec.More() {

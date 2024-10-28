@@ -83,7 +83,7 @@ func (d *DB) InsertRecords(name string, records []map[string]any, columns []stri
 	query = query[:len(query)-1]
 	stmt, err := d.dbConn.Prepare(query)
 	if err != nil {
-		return errors.WithMessage(err, "failed to preparte statement")
+		return errors.WithMessage(err, "failed to prepare statement")
 	}
 	_, err = stmt.Exec(vals...)
 	return err
