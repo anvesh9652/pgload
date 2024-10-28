@@ -130,7 +130,8 @@ func (c *CommandInfo) RunFormatSpecificLoaders(ctx context.Context, cf, jf []str
 	mu := new(sync.Mutex)
 	msgs := []string{}
 	pool := pool.New().WithErrors()
-	if len(cf) > 0 {
+	format := c.flagsMapS[Format]
+	if len(cf) > 0 && (format == "csv" || format == "both") {
 		pool.Go(func() error {
 			msg, err := csvloader.NewCSVLoader(cf, c.db, lookUp, typeSetting, concurrentRuns).Run(ctx)
 			mu.Lock()
@@ -139,7 +140,7 @@ func (c *CommandInfo) RunFormatSpecificLoaders(ctx context.Context, cf, jf []str
 			return err
 		})
 	}
-	if len(jf) > 0 {
+	if len(jf) > 0 && (format == "jsonl" || format == "both") {
 		pool.Go(func() error {
 			msg, err := jsonloader.New(jf, c.db, concurrentRuns, lookUp, typeSetting).Run(ctx)
 			mu.Lock()

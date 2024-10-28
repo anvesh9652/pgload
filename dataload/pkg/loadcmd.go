@@ -13,8 +13,10 @@ import (
 var (
 	version = "1.0.0"
 	example = `1. load file1.csv file2.csv file3.csv
-2. load -p 54321 data.csv 
-3. load -U test -P 123 -d temp -s testing -u "localhost:123" file_2*.csv test1.csv dummy/*/*.csv`
+2. load -f jsonl file1.json file2.json
+3. load -p 54321 data.csv
+4. load -f both -p 54321 data.csv data.json all_files/*
+5. load -U test -P 123 -d temp -s testing -u "localhost:123" file_2*.csv test1.csv dummy/*/*.csv`
 )
 
 const (
@@ -33,7 +35,7 @@ const (
 var rootCommand = cobra.Command{
 	Use:     "load",
 	Short:   "Efficiently loads data into PostgreSQL",
-	Long:    "Loads the provided CSV files data into PostgreSQL tables, leveraging optimized processes for faster performance.",
+	Long:    "Loads the provided CSV and JSONL files data into PostgreSQL tables, leveraging optimized processes for faster performance.",
 	Example: example,
 	Version: version,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -69,7 +71,7 @@ func init() {
 	pflags.StringP(URL, "u", "localhost:5432", "connection string to connect to the server")
 	pflags.StringP(Port, "p", "", "postgres server localhost port number")
 	pflags.StringP(Type, "t", shared.Dynamic, "setting(dynamic, alltext) used to assign type for table columns")
-	pflags.StringP(Format, "f", "csv", "the format of the data that was being loaded. supports(jsonl, csv)")
+	pflags.StringP(Format, "f", "csv", "the format of the data that was being loaded. supports(jsonl, csv, both)")
 
 	// Boolean flags
 	pflags.BoolP(Reset, "r", false, "reset tables if exists by default set to true")
