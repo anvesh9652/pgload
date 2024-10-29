@@ -13,7 +13,7 @@ Note: `JSONL` means the files where each row is a `JSON` object
 
 ## How to install
 ```sh
-go install github.com/anvesh9652/side-projects/data-load/cmd/load
+go install github.com/anvesh9652/side-projects/dataload/cmd/load@latest
 ```
 
 ## Help and Example Commands
