@@ -3,6 +3,7 @@ package v2
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -37,19 +38,21 @@ func NewCSVLoader(files []string, db *dbv2.DB, look int, t string, maxRuns int) 
 	}
 }
 
-func (c *CSVLoader) Run(ctx context.Context) error {
+func (c *CSVLoader) Run(ctx context.Context) (string, error) {
 	var totalRowsInserted, failed int64
 
 	start := time.Now()
 	err := shared.RunInParallel(c.MaxConcurrentRuns, c.filesList, func(file string) error {
 		var err error
+		name := shared.GetTableName(file)
+
 		defer func() {
 			if err != nil {
 				atomic.AddInt64(&failed, int64(1))
+				_ = c.db.DeleteTable(name)
 			}
 		}()
 
-		name := shared.GetTableName(file)
 		columnTypes, err := csvutils.FindColumnTypes(file, c.lookUpSize, &c.typeSetting)
 		if err != nil {
 			printError(file, name, err)
@@ -62,7 +65,13 @@ func (c *CSVLoader) Run(ctx context.Context) error {
 			printError(file, name, err)
 			return err
 		}
-		rowsInserted, err := c.load(ctx, file, name)
+		f, err := os.Open(file)
+		if err != nil {
+			printError(file, name, err)
+			return err
+		}
+		defer f.Close()
+		rowsInserted, err := LoadCSV(ctx, f, name, c.db)
 		if err != nil {
 			printError(file, name, err)
 			return err
@@ -72,26 +81,22 @@ func (c *CSVLoader) Run(ctx context.Context) error {
 			shared.FormatNumber(rowsInserted), shared.GetFileSize(file), file)
 		return nil
 	})
-	fmt.Printf("msg=\"final load stats\" total=%d success=%d failed=%d total_rows_inserted=%s took=%s\n",
-		len(c.filesList), len(c.filesList)-int(failed), failed, shared.FormatNumber(totalRowsInserted), time.Since(start))
-	return err
+	msg := fmt.Sprintf(`msg="final load stats" data_format=%q total=%d success=%d failed=%d total_rows_inserted=%s took=%s`,
+		"CSV", len(c.filesList), len(c.filesList)-int(failed), failed, shared.FormatNumber(totalRowsInserted), time.Since(start))
+	return msg, err
 }
 
-func (c *CSVLoader) load(ctx context.Context, f, table string) (int64, error) {
-	file, err := os.Open(f)
-	if err != nil {
-		return 0, err
-	}
-	headers, r, err := csvutils.GetCSVHeaders(file)
+func LoadCSV(ctx context.Context, f io.Reader, table string, db *dbv2.DB) (int64, error) {
+	headers, r, err := csvutils.GetCSVHeaders(f)
 	if err != nil {
 		return 0, err
 	}
 	copyCmd := fmt.Sprintf(`COPY %s.%s(%s) FROM STDIN with DELIMITER %s %s`,
-		c.db.Schema(), table, strings.Join(headers, ", "), Delimiter, DataFormat,
+		db.Schema(), table, strings.Join(headers, ", "), Delimiter, DataFormat,
 	)
-	return c.db.LoadIn(ctx, r, copyCmd)
+	return db.LoadIn(ctx, r, copyCmd)
 }
 
 func printError(f, name string, err error) {
-	fmt.Printf(`status=FAILED msg="unable to load" file=%q name=%q error=%q`+"\n", f, name, err.Error())
+	fmt.Printf(`status=FAILED data_format="CSV" msg="unable to load" file=%q name=%q error=%q`+"\n", f, name, err.Error())
 }
