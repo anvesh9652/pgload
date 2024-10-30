@@ -18,6 +18,12 @@ const (
 	AllText = "alltext"
 )
 
+// data formats
+var (
+	CSV   = "csv"
+	JSONL = "jsonl"
+)
+
 func GetTableName(file string) string {
 	// Table names are being created with lowercase letters
 	// even if we pass uppercase letters

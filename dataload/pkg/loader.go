@@ -118,6 +118,13 @@ func (c *CommandInfo) RunLoader(ctx context.Context) error {
 }
 
 func (c *CommandInfo) RunFormatSpecificLoaders(ctx context.Context, cf, jf []string) error {
+	format := c.flagsMapS[Format]
+	if format == shared.CSV && len(cf) == 0 {
+		return errors.New("at least provide one CSV file")
+	}
+	if format == shared.JSONL && len(jf) == 0 {
+		return errors.New("at least provide one JSONL file")
+	}
 	if len(cf)+len(jf) == 0 {
 		return errors.New("at least provide one file")
 	}
@@ -130,7 +137,6 @@ func (c *CommandInfo) RunFormatSpecificLoaders(ctx context.Context, cf, jf []str
 	mu := new(sync.Mutex)
 	msgs := []string{}
 	pool := pool.New().WithErrors()
-	format := c.flagsMapS[Format]
 	if len(cf) > 0 && (format == "csv" || format == "both") {
 		pool.Go(func() error {
 			msg, err := csvloader.NewCSVLoader(cf, c.db, lookUp, typeSetting, concurrentRuns).Run(ctx)
