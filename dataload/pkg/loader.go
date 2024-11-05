@@ -90,6 +90,10 @@ func NewCommandInfo(ctx context.Context, cmd *cobra.Command, args []string) (*Co
 }
 
 func (c *CommandInfo) RunLoader(ctx context.Context) error {
+	if err := c.db.EnsureSchema(); err != nil {
+		return err
+	}
+
 	var csvFiles, jsonFiles []string
 	for _, arg := range c.args {
 		if strings.Contains(arg, "*") {
