@@ -16,7 +16,7 @@ const (
 	Integer = "INTEGER"
 	Float   = "FLOAT"
 	Text    = "TEXT"
-	Object  = "JSON"
+	Json    = "JSON"
 )
 
 type DB struct {

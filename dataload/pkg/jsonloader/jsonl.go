@@ -262,7 +262,7 @@ func getType(val any) string {
 	case float64, int:
 		return dbv2.Float
 	case any:
-		return dbv2.Object
+		return dbv2.Json
 	default:
 		return dbv2.Text
 	}
