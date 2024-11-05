@@ -18,8 +18,9 @@ import (
 	"github.com/sourcegraph/conc/pool"
 )
 
-// 	jsoniter "github.com/json-iterator/go"
-// var json = jsoniter.ConfigCompatibleWithStandardLibrary
+const (
+	batchSize = 500 // 500
+)
 
 type row map[string]any
 
@@ -116,6 +117,7 @@ func convertJsonlToCSV(w io.Writer, file string, cols []string) error {
 	return writeAsCSV(cw, dec, cols)
 }
 
+// this was 7-14sec faster
 func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
 	f, err := os.Open(file)
 	if err != nil {
@@ -130,10 +132,9 @@ func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
 	if err = cw.Write(cols); err != nil {
 		return err
 	}
-	cw.Flush()
 
 	ar := NewAsyncReader(f, cw, cols)
-	// go ar.parseRows(cw)
+	go ar.parseRows()
 
 	// collect all the errors and only print the actual error
 	var firstErr error
@@ -152,27 +153,21 @@ func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
 		}
 	}()
 
-	ar.parseRows(cw)
-
-	// batch := 10
-	// rows := make([][]string, batch)
-	// idx := 0
-	// for row := range ar.OutCh {
-	// 	// rows[idx] = row
-	// 	// idx++
-	// 	// if idx == batch {
-	// 	// 	idx = 0
-	// 	// 	if err = cw.WriteAll(rows); err != nil {
-	// 	// 		return err
-	// 	// 	}
-	// 	// }
-	// 	if err = cw.Write(row); err != nil {
-	// 		return err
-	// 	}
-	// }
-	// if idx > 0 {
-	// 	return cw.WriteAll(rows[:idx])
-	// }
+	rows := make([][]string, batchSize)
+	idx := 0
+	for row := range ar.OutCh {
+		rows[idx] = row
+		idx++
+		if idx == batchSize {
+			idx = 0
+			if err = cw.WriteAll(rows); err != nil {
+				return err
+			}
+		}
+	}
+	if idx > 0 {
+		return cw.WriteAll(rows[:idx])
+	}
 	return nil
 
 }
