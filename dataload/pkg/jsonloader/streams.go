@@ -84,7 +84,6 @@ func (a *AsyncReader) parseRows() {
 			defer wg.Done()
 			for data := range a.InCh {
 				buff := a.pool.Get().(*bytes.Buffer)
-				buff.Reset()
 				if _, err := buff.Write(data); err != nil {
 					a.ErrCh <- err
 					return
@@ -94,6 +93,8 @@ func (a *AsyncReader) parseRows() {
 					a.ErrCh <- err
 					return
 				}
+
+				buff.Reset()
 				a.pool.Put(buff)
 			}
 		}()
