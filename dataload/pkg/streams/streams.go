@@ -3,9 +3,7 @@ package streams
 import (
 	"bytes"
 	"encoding/csv"
-	"fmt"
 	"io"
-	"os"
 	"sync"
 )
 
@@ -116,4 +114,3 @@ func (a *AsyncStreams) Process() {
 	a.wg.Wait()
 	close(a.Out)
 }
-

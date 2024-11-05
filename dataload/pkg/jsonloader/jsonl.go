@@ -75,7 +75,7 @@ func (j *JsonLoader) Run(ctx context.Context) (string, error) {
 		p := pool.New().WithErrors().WithFirstError()
 		p.Go(func() error {
 			defer pw.Close()
-			return convertJsonlToCSV(pw, file, cols)
+			return convertJsonlToCSV2(pw, file, cols)
 		})
 
 		rowsInserted, err := csv2.LoadCSV(ctx, pr, name, j.db)
@@ -112,8 +112,74 @@ func convertJsonlToCSV(w io.Writer, file string, cols []string) error {
 	if err = cw.Write(cols); err != nil {
 		return err
 	}
-
 	dec := json.NewDecoder(f)
+	return writeAsCSV(cw, dec, cols)
+}
+
+func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	cw := csv.NewWriter(w)
+	defer cw.Flush()
+
+	// write cols first
+	if err = cw.Write(cols); err != nil {
+		return err
+	}
+	cw.Flush()
+
+	ar := NewAsyncReader(f, cw, cols)
+	// go ar.parseRows(cw)
+
+	// collect all the errors and only print the actual error
+	var firstErr error
+	defer func() {
+		close(ar.ErrCh)
+		if firstErr != nil {
+			err = firstErr
+		}
+	}()
+
+	go func() {
+		for e := range ar.ErrCh {
+			if firstErr == nil {
+				firstErr = e
+			}
+		}
+	}()
+
+	ar.parseRows(cw)
+
+	// batch := 10
+	// rows := make([][]string, batch)
+	// idx := 0
+	// for row := range ar.OutCh {
+	// 	// rows[idx] = row
+	// 	// idx++
+	// 	// if idx == batch {
+	// 	// 	idx = 0
+	// 	// 	if err = cw.WriteAll(rows); err != nil {
+	// 	// 		return err
+	// 	// 	}
+	// 	// }
+	// 	if err = cw.Write(row); err != nil {
+	// 		return err
+	// 	}
+	// }
+	// if idx > 0 {
+	// 	return cw.WriteAll(rows[:idx])
+	// }
+	return nil
+
+}
+
+// make use of bulk writes
+func writeAsCSV(cw *csv.Writer, dec *json.Decoder, cols []string) error {
+	var err error
 	for dec.More() {
 		var r row
 		if err = dec.Decode(&r); err != nil {
@@ -123,6 +189,7 @@ func convertJsonlToCSV(w io.Writer, file string, cols []string) error {
 		for i, header := range cols {
 			csvRow[i] = toString(r[header])
 		}
+
 		if err = cw.Write(csvRow); err != nil {
 			return err
 		}
