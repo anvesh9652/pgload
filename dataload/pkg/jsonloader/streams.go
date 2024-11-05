@@ -3,17 +3,18 @@ package jsonloader
 import (
 	"bytes"
 	"encoding/csv"
-	"encoding/json"
 	"io"
 	"sync"
-	// jsoniter "github.com/json-iterator/go"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
-// var jsoni = jsoniter.ConfigFastest
+var jsoni = jsoniter.ConfigFastest
 
 const (
 	chanSize = 50
-	buffSize = 10 * 1024 * 1024 // 10 MB
+	// after multiple tries seems 6 MB was a sweet spot
+	buffSize = 6 * 1024 * 1024 // 10 MB (also)
 
 	numWorkers = 5
 )
@@ -59,7 +60,8 @@ func NewAsyncReader(r io.Reader, cw *csv.Writer, cols []string) *AsyncReader {
 				break
 			}
 
-			lastNewLineIdx := bytes.LastIndex(buff[:n], []byte("\n"))
+			// lastNewLineIdx := bytes.LastIndex(buff[:n], []byte("\n"))
+			lastNewLineIdx := getNewLineLastIndex(buff[:n])
 			if lastNewLineIdx == -1 {
 				leftOver = append(leftOver, buff[:n]...)
 				continue
@@ -88,7 +90,7 @@ func (a *AsyncReader) parseRows() {
 					a.ErrCh <- err
 					return
 				}
-				dec := json.NewDecoder(buff)
+				dec := jsoni.NewDecoder(buff)
 				if err := a.sendToOutput(dec); err != nil {
 					a.ErrCh <- err
 					return
@@ -102,7 +104,7 @@ func (a *AsyncReader) parseRows() {
 	wg.Wait()
 }
 
-func (a *AsyncReader) sendToOutput(dec *json.Decoder) error {
+func (a *AsyncReader) sendToOutput(dec *jsoniter.Decoder) error {
 	var err error
 	for dec.More() {
 		var r row
@@ -116,4 +118,14 @@ func (a *AsyncReader) sendToOutput(dec *json.Decoder) error {
 		a.OutCh <- csvRow
 	}
 	return nil
+}
+
+func getNewLineLastIndex(buff []byte) int {
+	n := len(buff)
+	for i := n - 1; i >= 0; i-- {
+		if buff[i] == 10 {
+			return i
+		}
+	}
+	return -1
 }

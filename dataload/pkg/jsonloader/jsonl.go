@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	batchSize = 500 // 500
+	batchSize = 3000 // 500
 )
 
 type row map[string]any
