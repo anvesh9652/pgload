@@ -125,7 +125,7 @@ func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
 	}
 	defer f.Close()
 
-	cw := csv.NewWriter(w)
+	cw := csvWriterWrapper{orgCsvW: csv.NewWriter(w)}
 	defer cw.Flush()
 
 	// write cols first
@@ -133,7 +133,7 @@ func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
 		return err
 	}
 
-	ar := NewAsyncReader(f, cw, cols)
+	ar := NewAsyncReader(f, cols)
 	go ar.parseRows()
 
 	// collect all the errors and only print the actual error
@@ -261,6 +261,8 @@ func getType(val any) string {
 	switch val.(type) {
 	case float64, int:
 		return dbv2.Float
+	case string:
+		return dbv2.Text
 	case any:
 		return dbv2.Json
 	default:
@@ -283,4 +285,31 @@ func maxRecordedType(types map[string]int) string {
 
 func printError(f, name string, err error) {
 	fmt.Printf(`status=FAILED data_format="JSONL" msg="unable to load" file=%q name=%q error=%q`+"\n", f, name, err.Error())
+}
+
+// this are debug purpose just see what exactly we are loading
+type csvWriterWrapper struct {
+	orgCsvW *csv.Writer
+	debugW  *csv.Writer
+}
+
+func (t *csvWriterWrapper) Write(r []string) error {
+	if t.debugW != nil {
+		_ = t.debugW.Write(r)
+	}
+	return t.orgCsvW.Write(r)
+}
+
+func (t *csvWriterWrapper) WriteAll(r [][]string) error {
+	if t.debugW != nil {
+		_ = t.debugW.WriteAll(r)
+	}
+	return t.orgCsvW.WriteAll(r)
+}
+
+func (t *csvWriterWrapper) Flush() {
+	if t.debugW != nil {
+		t.debugW.Flush()
+	}
+	t.orgCsvW.Flush()
 }

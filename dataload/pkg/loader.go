@@ -159,10 +159,11 @@ func (c *CommandInfo) RunFormatSpecificLoaders(ctx context.Context, cf, jf []str
 			return err
 		})
 	}
-
-	if err := pool.Wait(); err != nil {
+	err := pool.Wait()
+	// prints the stats before returning error
+	fmt.Println(strings.Join(msgs, "\n"))
+	if err != nil {
 		return err
 	}
-	fmt.Println(strings.Join(msgs, "\n"))
 	return nil
 }

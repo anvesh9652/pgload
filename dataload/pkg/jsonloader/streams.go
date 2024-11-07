@@ -1,15 +1,13 @@
 package jsonloader
 
 import (
+	"bufio"
 	"bytes"
-	"encoding/csv"
 	"io"
 	"sync"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/buger/jsonparser"
 )
-
-var jsoni = jsoniter.ConfigFastest
 
 const (
 	chanSize = 50
@@ -28,10 +26,11 @@ type AsyncReader struct {
 	OutCh chan []string
 	InCh  chan []byte
 
-	pool sync.Pool
+	pool    sync.Pool
+	rowPool sync.Pool
 }
 
-func NewAsyncReader(r io.Reader, cw *csv.Writer, cols []string) *AsyncReader {
+func NewAsyncReader(r io.Reader, cols []string) *AsyncReader {
 	w := &AsyncReader{
 		cols:  cols,
 		r:     r,
@@ -42,6 +41,12 @@ func NewAsyncReader(r io.Reader, cw *csv.Writer, cols []string) *AsyncReader {
 			New: func() any {
 				buff := bytes.NewBuffer(nil)
 				return buff
+			},
+		},
+		rowPool: sync.Pool{
+			New: func() any {
+				row := make([]string, len(cols))
+				return &row
 			},
 		},
 	}
@@ -78,6 +83,11 @@ func NewAsyncReader(r io.Reader, cw *csv.Writer, cols []string) *AsyncReader {
 
 // just got to know that writer are not thread safe in go
 func (a *AsyncReader) parseRows() {
+	colIdxMap := map[string]int{}
+	for i, col := range a.cols {
+		colIdxMap[col] = i
+	}
+
 	wg := new(sync.WaitGroup)
 	defer close(a.OutCh)
 	for range numWorkers {
@@ -90,8 +100,8 @@ func (a *AsyncReader) parseRows() {
 					a.ErrCh <- err
 					return
 				}
-				dec := jsoni.NewDecoder(buff)
-				if err := a.sendToOutput(dec); err != nil {
+
+				if err := a.sendToOutput(buff, colIdxMap); err != nil {
 					a.ErrCh <- err
 					return
 				}
@@ -104,20 +114,22 @@ func (a *AsyncReader) parseRows() {
 	wg.Wait()
 }
 
-func (a *AsyncReader) sendToOutput(dec *jsoniter.Decoder) error {
-	var err error
-	for dec.More() {
-		var r row
-		if err = dec.Decode(&r); err != nil {
+func (a *AsyncReader) sendToOutput(buff *bytes.Buffer, colToIdx map[string]int) error {
+	sc := bufio.NewScanner(buff)
+	eachRow := a.rowPool.Get().(*[]string)
+	defer a.rowPool.Put(eachRow)
+	for sc.Scan() {
+		// todo: this package was few causing issues, quotes weren't being handled properly
+		err := jsonparser.ObjectEach(sc.Bytes(), func(key, value []byte, dataType jsonparser.ValueType, offset int) error {
+			(*eachRow)[colToIdx[string(key)]] = string(value)
+			return nil
+		})
+		if err != nil {
 			return err
 		}
-		var csvRow = make([]string, len(a.cols))
-		for i, header := range a.cols {
-			csvRow[i] = toString(r[header])
-		}
-		a.OutCh <- csvRow
+		a.OutCh <- *eachRow
 	}
-	return nil
+	return sc.Err()
 }
 
 func getNewLineLastIndex(buff []byte) int {
