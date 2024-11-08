@@ -198,10 +198,9 @@ func toString(val any) string {
 		return strconv.Itoa(t)
 	case float64:
 		return fmt.Sprintf("%f", t)
-	// todo: why this isn't working by using this?
-	// case string:
-	// 	return t
-	case any:
+	case string:
+		return t
+	case []any, map[string]any:
 		bt, _ := json.Marshal(t)
 		return string(bt)
 	case nil:
@@ -261,7 +260,9 @@ func getType(val any) string {
 	switch val.(type) {
 	case float64, int:
 		return dbv2.Float
-	case any:
+	case string:
+		return dbv2.Text
+	case []any, map[string]any:
 		return dbv2.Json
 	default:
 		return dbv2.Text
