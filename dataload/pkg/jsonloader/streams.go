@@ -6,6 +6,7 @@ import (
 	"io"
 	"sync"
 
+	"github.com/anvesh9652/side-projects/shared"
 	"github.com/buger/jsonparser"
 )
 
@@ -118,10 +119,14 @@ func (a *AsyncReader) sendToOutput(buff *bytes.Buffer, colToIdx map[string]int) 
 	sc := bufio.NewScanner(buff)
 	eachRow := a.rowPool.Get().(*[]string)
 	defer a.rowPool.Put(eachRow)
+
+	mp := map[string]int{}
+
 	for sc.Scan() {
 		// todo: this package was few causing issues, quotes weren't being handled properly
 		err := jsonparser.ObjectEach(sc.Bytes(), func(key, value []byte, dataType jsonparser.ValueType, offset int) error {
 			(*eachRow)[colToIdx[string(key)]] = string(value)
+			mp[dataType.String()] += 1
 			return nil
 		})
 		if err != nil {
@@ -129,6 +134,7 @@ func (a *AsyncReader) sendToOutput(buff *bytes.Buffer, colToIdx map[string]int) 
 		}
 		a.OutCh <- *eachRow
 	}
+	shared.AsJson(mp, nil)
 	return sc.Err()
 }
 

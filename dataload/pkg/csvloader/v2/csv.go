@@ -95,7 +95,7 @@ func LoadCSV(ctx context.Context, f io.Reader, table string, db *dbv2.DB) (int64
 	// TODO: had to use this LATIN1 encoding, getting this error since we started using jsonparser:
 	// invalid byte sequence for encoding \"UTF8\"
 	// update: still we are getting same kind of error ERROR: invalid byte sequence for encoding \"LATIN1\":
-	copyCmd := fmt.Sprintf(`COPY %s.%s(%s) FROM STDIN with ENCODING 'LATIN1' DELIMITER %s %s`,
+	copyCmd := fmt.Sprintf(`COPY %s.%s(%s) FROM STDIN with DELIMITER %s %s`,
 		db.Schema(), table, strings.Join(headers, ", "), Delimiter, DataFormat,
 	)
 	return db.LoadIn(ctx, r, copyCmd)

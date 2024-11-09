@@ -131,3 +131,11 @@ func RunInParallel(numWorkers int, items []string, fn func(item string) error) e
 	wg.Wait()
 	return workerErr
 }
+
+func AsJson(data any, w io.Writer) {
+	if w == nil {
+		w = os.Stdout
+	}
+	bt, _ := json.MarshalIndent(data, "", "  ")
+	w.Write(bt)
+}
