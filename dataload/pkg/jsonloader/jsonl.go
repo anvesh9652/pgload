@@ -18,8 +18,9 @@ import (
 	"github.com/sourcegraph/conc/pool"
 )
 
-// 	jsoniter "github.com/json-iterator/go"
-// var json = jsoniter.ConfigCompatibleWithStandardLibrary
+const (
+	batchSize = 3000 // 500
+)
 
 type row map[string]any
 
@@ -75,7 +76,7 @@ func (j *JsonLoader) Run(ctx context.Context) (string, error) {
 		p := pool.New().WithErrors().WithFirstError()
 		p.Go(func() error {
 			defer pw.Close()
-			return convertJsonlToCSV(pw, file, cols)
+			return convertJsonlToCSV2(pw, file, cols)
 		})
 
 		rowsInserted, err := csv2.LoadCSV(ctx, pr, name, j.db)
@@ -112,17 +113,77 @@ func convertJsonlToCSV(w io.Writer, file string, cols []string) error {
 	if err = cw.Write(cols); err != nil {
 		return err
 	}
-
 	dec := json.NewDecoder(f)
+	return writeAsCSV(cw, dec, cols)
+}
+
+// this was 7-14sec faster
+func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	cw := csv.NewWriter(w)
+	defer cw.Flush()
+
+	// write cols first
+	if err = cw.Write(cols); err != nil {
+		return err
+	}
+
+	ar := NewAsyncReader(f, cw, cols)
+	go ar.parseRows()
+
+	// collect all the errors and only print the actual error
+	var firstErr error
+	defer func() {
+		close(ar.ErrCh)
+		if firstErr != nil {
+			err = firstErr
+		}
+	}()
+
+	go func() {
+		for e := range ar.ErrCh {
+			if firstErr == nil {
+				firstErr = e
+			}
+		}
+	}()
+
+	rows := make([][]string, batchSize)
+	idx := 0
+	for row := range ar.OutCh {
+		rows[idx] = row
+		idx++
+		if idx == batchSize {
+			idx = 0
+			if err = cw.WriteAll(rows); err != nil {
+				return err
+			}
+		}
+	}
+	if idx > 0 {
+		return cw.WriteAll(rows[:idx])
+	}
+	return nil
+}
+
+// make use of bulk writes
+func writeAsCSV(cw *csv.Writer, dec *json.Decoder, cols []string) error {
+	var err error
 	for dec.More() {
 		var r row
 		if err = dec.Decode(&r); err != nil {
 			return err
 		}
-		var csvRow = make([]string, len(cols))
+		csvRow := make([]string, len(cols))
 		for i, header := range cols {
 			csvRow[i] = toString(r[header])
 		}
+
 		if err = cw.Write(csvRow); err != nil {
 			return err
 		}
@@ -136,10 +197,9 @@ func toString(val any) string {
 		return strconv.Itoa(t)
 	case float64:
 		return fmt.Sprintf("%f", t)
-	// todo: why this isn't working by using this?
-	// case string:
-	// 	return t
-	case any:
+	case string:
+		return t
+	case []any, map[string]any:
 		bt, _ := json.Marshal(t)
 		return string(bt)
 	case nil:
@@ -199,8 +259,10 @@ func getType(val any) string {
 	switch val.(type) {
 	case float64, int:
 		return dbv2.Float
-	case any:
-		return dbv2.Object
+	case string:
+		return dbv2.Text
+	case []any, map[string]any:
+		return dbv2.Json
 	default:
 		return dbv2.Text
 	}

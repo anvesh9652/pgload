@@ -90,6 +90,10 @@ func NewCommandInfo(ctx context.Context, cmd *cobra.Command, args []string) (*Co
 }
 
 func (c *CommandInfo) RunLoader(ctx context.Context) error {
+	if err := c.db.EnsureSchema(); err != nil {
+		return err
+	}
+
 	var csvFiles, jsonFiles []string
 	for _, arg := range c.args {
 		if strings.Contains(arg, "*") {
@@ -156,9 +160,10 @@ func (c *CommandInfo) RunFormatSpecificLoaders(ctx context.Context, cf, jf []str
 		})
 	}
 
-	if err := pool.Wait(); err != nil {
+	err := pool.Wait()
+	fmt.Println(strings.Join(msgs, "\n"))
+	if err != nil {
 		return err
 	}
-	fmt.Println(strings.Join(msgs, "\n"))
 	return nil
 }

@@ -16,7 +16,7 @@ const (
 	Integer = "INTEGER"
 	Float   = "FLOAT"
 	Text    = "TEXT"
-	Object  = "JSON"
+	Json    = "JSON"
 )
 
 type DB struct {
@@ -51,24 +51,27 @@ func (d *DB) GetRows(ctx context.Context, table string) error {
 	return nil
 }
 
+func (d *DB) EnsureSchema() error {
+	_, err := d.dbConn.Exec("CREATE SCHEMA " + d.schema)
+	if err != nil {
+		if !strings.Contains(err.Error(), fmt.Sprintf(`schema "%s" already exists`, d.schema)) {
+			fmt.Println("here?")
+			return err
+		}
+	}
+	return nil
+}
+
 func (d *DB) EnsureTable(name string, tableSchema string) error {
 	// Table names are being created with lowercase letters
 	// even if we pass uppercase letters
 	createQuery := fmt.Sprintf("CREATE TABLE %s.%s %s", d.schema, name, tableSchema)
-	// to check if the schema exists
 	_, err := d.dbConn.Exec(createQuery)
 	if err == nil {
 		return nil
 	}
 
-	errs := err.Error()
-	if strings.Contains(errs, fmt.Sprintf(`schema "%s" does not exist`, d.schema)) {
-		_, err := d.dbConn.Exec("CREATE SCHEMA " + d.schema)
-		if err != nil {
-			return err
-		}
-	}
-	if strings.Contains(errs, fmt.Sprintf(`relation "%s" already exists`, name)) {
+	if strings.Contains(err.Error(), fmt.Sprintf(`relation "%s" already exists`, name)) {
 		if !d.resetTable {
 			return nil
 		}
