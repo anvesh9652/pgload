@@ -60,7 +60,6 @@ func NewAsyncReader(r io.Reader, cw *csv.Writer, cols []string) *AsyncReader {
 				break
 			}
 
-			// lastNewLineIdx := bytes.LastIndex(buff[:n], []byte("\n"))
 			lastNewLineIdx := getNewLineLastIndex(buff[:n])
 			if lastNewLineIdx == -1 {
 				leftOver = append(leftOver, buff[:n]...)
@@ -76,7 +75,7 @@ func NewAsyncReader(r io.Reader, cw *csv.Writer, cols []string) *AsyncReader {
 	return w
 }
 
-// just got to know that writer are not thread safe in go
+// Lesson: go std package writers are not thread safe
 func (a *AsyncReader) parseRows() {
 	wg := new(sync.WaitGroup)
 	defer close(a.OutCh)
@@ -111,7 +110,7 @@ func (a *AsyncReader) sendToOutput(dec *jsoniter.Decoder) error {
 		if err = dec.Decode(&r); err != nil {
 			return err
 		}
-		var csvRow = make([]string, len(a.cols))
+		csvRow := make([]string, len(a.cols))
 		for i, header := range a.cols {
 			csvRow[i] = toString(r[header])
 		}
@@ -123,7 +122,7 @@ func (a *AsyncReader) sendToOutput(dec *jsoniter.Decoder) error {
 func getNewLineLastIndex(buff []byte) int {
 	n := len(buff)
 	for i := n - 1; i >= 0; i-- {
-		if buff[i] == 10 {
+		if buff[i] == 10 { // new line "\n" ASCII value is "10"
 			return i
 		}
 	}

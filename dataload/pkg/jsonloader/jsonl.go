@@ -169,7 +169,6 @@ func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
 		return cw.WriteAll(rows[:idx])
 	}
 	return nil
-
 }
 
 // make use of bulk writes
@@ -180,7 +179,7 @@ func writeAsCSV(cw *csv.Writer, dec *json.Decoder, cols []string) error {
 		if err = dec.Decode(&r); err != nil {
 			return err
 		}
-		var csvRow = make([]string, len(cols))
+		csvRow := make([]string, len(cols))
 		for i, header := range cols {
 			csvRow[i] = toString(r[header])
 		}
