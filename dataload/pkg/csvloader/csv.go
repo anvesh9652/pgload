@@ -25,6 +25,7 @@ type CSVLoader struct {
 	typeSetting string
 }
 
+// Warning: this doesn't support gz files
 func NewCSVLoader(files []string, db *pgdb.DB, look int, t string, maxRuns int) *CSVLoader {
 	return &CSVLoader{
 		filesList:         files,

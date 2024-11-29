@@ -20,9 +20,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var (
-	concurrentRuns = 8
-)
+var concurrentRuns = 8
 
 type Flags map[string]any
 
@@ -102,18 +100,18 @@ func (c *CommandInfo) RunLoader(ctx context.Context) error {
 				return errors.Wrapf(err, "glob pattern matching failed: %s", arg)
 			}
 			for _, file := range result {
-				if strings.HasSuffix(file, ".csv") {
+				if shared.IsCSVFile(file) {
 					csvFiles = append(csvFiles, file)
 				}
-				if strings.HasSuffix(file, ".json") {
+				if shared.IsJSONFile(file) {
 					jsonFiles = append(jsonFiles, file)
 				}
 			}
 		} else {
-			if strings.HasSuffix(arg, ".csv") {
+			if shared.IsCSVFile(arg) {
 				csvFiles = append(csvFiles, arg)
 			}
-			if strings.HasSuffix(arg, ".json") {
+			if shared.IsJSONFile(arg) {
 				jsonFiles = append(jsonFiles, arg)
 			}
 		}

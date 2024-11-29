@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
 	"github.com/anvesh9652/side-projects/shared"
 	"github.com/anvesh9652/side-projects/shared/csvutils"
+	"github.com/anvesh9652/side-projects/shared/reader"
 )
 
 const (
@@ -65,13 +65,11 @@ func (c *CSVLoader) Run(ctx context.Context) (string, error) {
 			printError(file, name, err)
 			return err
 		}
-		f, err := os.Open(file)
-		if err != nil {
-			printError(file, name, err)
-			return err
-		}
-		defer f.Close()
-		rowsInserted, err := LoadCSV(ctx, f, name, c.db)
+
+		r, err := reader.NewFileGzipReader(file)
+		defer r.Close()
+
+		rowsInserted, err := LoadCSV(ctx, r, name, c.db)
 		if err != nil {
 			printError(file, name, err)
 			return err
@@ -86,8 +84,8 @@ func (c *CSVLoader) Run(ctx context.Context) (string, error) {
 	return msg, err
 }
 
-func LoadCSV(ctx context.Context, f io.Reader, table string, db *dbv2.DB) (int64, error) {
-	headers, r, err := csvutils.GetCSVHeaders(f)
+func LoadCSV(ctx context.Context, r io.Reader, table string, db *dbv2.DB) (int64, error) {
+	headers, r, err := csvutils.GetCSVHeaders(r)
 	if err != nil {
 		return 0, err
 	}

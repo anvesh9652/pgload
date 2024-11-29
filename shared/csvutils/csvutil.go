@@ -11,6 +11,7 @@ import (
 
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
 	"github.com/anvesh9652/side-projects/shared"
+	"github.com/anvesh9652/side-projects/shared/reader"
 )
 
 func NewCSVReaderAndColumns(path string) (*csv.Reader, []string, error) {
@@ -18,6 +19,7 @@ func NewCSVReaderAndColumns(path string) (*csv.Reader, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+
 	csvr := csv.NewReader(file)
 	headers, err := csvr.Read()
 	return csvr, headers, err
@@ -31,7 +33,13 @@ func BuildColumnTypeStr(types map[string]string) (res []string) {
 }
 
 func FindColumnTypes(path string, lookUpSize int, typeSetting *string) (map[string]string, error) {
-	csvr, headers, err := NewCSVReaderAndColumns(path)
+	r, err := reader.NewFileGzipReader(path)
+	if err != nil {
+		return nil, err
+	}
+	r.Close()
+	csvr := csv.NewReader(r)
+	headers, err := csvr.Read()
 	if err != nil {
 		return nil, err
 	}
@@ -90,6 +98,7 @@ func findType(val string, typeSetting *string) string {
 	return dbv2.Text
 }
 
+// 
 func GetCSVHeaders(r io.Reader) ([]string, io.Reader, error) {
 	// didn't find the best way to get only first row
 	// no need to worry here if `br` reads more than first row
