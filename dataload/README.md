@@ -8,6 +8,7 @@ This command-line tool helps you load `CSV` and `JSONL` files into a PostgreSQL 
 - You can adjust the lookup size, which helps the tool to figure out accurate types for the table schema (higher gives more accuracy)
 - For `CSV` files, uses PostgreSQL `COPY` command, allowing you to load files with millions of rows and sizes in gigabytes
 - For `JSONL` files, it first converts the data into `CSV` and then follows the regular `CSV` data loading process. Due to this conversion, it might not be as performant as `CSV` loading, but it can still handle millions of rows.
+- Supports directly loading compressed(`.gz`) `CSV` and `JSONL` files.
 
 Note: `JSONL` means the files where each row is a `JSON` object
 
@@ -22,8 +23,11 @@ load -h
 ```
 
 
-## Stats for `jsonl` file loading
+## Stats
 **Mac 15 inch - M1 Pro** || **10 cores and 16gb RAM**
+<details>
+    <summary><b><code>jsonl</code> file loading</b></summary>
+
 ```bash
 ➜ side-projects • own ✗ git:(support-for-gz-files) ✗ 
 ❯ load -s gz -f "both" /Users/agali/Downloads/temp/my_data/usage_data_3m.json 
@@ -50,3 +54,7 @@ msg="final load stats" data_format="JSONL" total=1 success=1 failed=0 total_rows
 status=SUCCESS rows_inserted=12.55M file_size=486MB file=/Users/agali/Downloads/temp/my_data/usage-data.json.gz
 msg="final load stats" data_format="JSONL" total=1 success=1 failed=0 total_rows_inserted=12.55M took=3m10.609226875s
 ```
+</details>
+<details>
+    <summary><b><code>csv</code> file loading(not updated yet)</b></summary>
+</details>
