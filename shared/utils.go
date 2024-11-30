@@ -37,7 +37,8 @@ func GetTableName(file string) string {
 	name := getFileName(pathSplit[N-1])
 	if len(pathSplit) > 1 {
 		name = pathSplit[N-2] + "_" + name
-	} else if unicode.IsDigit(rune(name[0])) {
+	}
+	if unicode.IsDigit(rune(name[0])) {
 		// we can't have a table name that start's with digit
 		name = "t" + name
 	}
@@ -58,7 +59,7 @@ func getFileName(name string) string {
 		return ns[0]
 	}
 	// file.csv.gz => file_gz
-	return fmt.Sprintf("%s_%s", ns[0], ns[2])
+	return fmt.Sprintf("%s_%s", ns[0], ns[len(ns)-1])
 }
 
 func Check(err error, msg string, v ...any) {
