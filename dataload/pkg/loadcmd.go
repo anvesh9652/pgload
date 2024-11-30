@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/anvesh9652/side-projects/shared"
+	. "github.com/anvesh9652/side-projects/shared"
 	"github.com/spf13/cobra"
 )
 
@@ -70,8 +70,8 @@ func init() {
 	pflags.StringP(Schema, "s", "public", "schema name")
 	pflags.StringP(URL, "u", "localhost:5432", "connection string to connect to the server")
 	pflags.StringP(Port, "p", "", "postgres server localhost port number")
-	pflags.StringP(Type, "t", shared.Dynamic, "setting(dynamic, alltext) used to assign type for table columns")
-	pflags.StringP(Format, "f", "csv", "the format of the data that was being loaded. supports(jsonl, csv, both)")
+	pflags.StringP(Type, "t", Dynamic, "setting(dynamic, alltext) used to assign type for table columns")
+	pflags.StringP(Format, "f", CSV, fmt.Sprintf("the format of the data that was being loaded. supports: %s, %s, %s", CSV, JSONL, Both))
 
 	// Boolean flags
 	pflags.BoolP(Reset, "r", false, "reset tables if exists by default set to true")

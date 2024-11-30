@@ -22,6 +22,8 @@ const (
 var (
 	CSV   = "csv"
 	JSONL = "jsonl"
+
+	Both = "both"
 )
 
 func GetTableName(file string) string {
