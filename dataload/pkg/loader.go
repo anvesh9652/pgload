@@ -20,9 +20,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var (
-	concurrentRuns = 8
-)
+var concurrentRuns = 8
 
 type Flags map[string]any
 
@@ -102,18 +100,18 @@ func (c *CommandInfo) RunLoader(ctx context.Context) error {
 				return errors.Wrapf(err, "glob pattern matching failed: %s", arg)
 			}
 			for _, file := range result {
-				if strings.HasSuffix(file, ".csv") {
+				if shared.IsCSVFile(file) {
 					csvFiles = append(csvFiles, file)
 				}
-				if strings.HasSuffix(file, ".json") {
+				if shared.IsJSONFile(file) {
 					jsonFiles = append(jsonFiles, file)
 				}
 			}
 		} else {
-			if strings.HasSuffix(arg, ".csv") {
+			if shared.IsCSVFile(arg) {
 				csvFiles = append(csvFiles, arg)
 			}
-			if strings.HasSuffix(arg, ".json") {
+			if shared.IsJSONFile(arg) {
 				jsonFiles = append(jsonFiles, arg)
 			}
 		}
@@ -123,14 +121,8 @@ func (c *CommandInfo) RunLoader(ctx context.Context) error {
 
 func (c *CommandInfo) RunFormatSpecificLoaders(ctx context.Context, cf, jf []string) error {
 	format := c.flagsMapS[Format]
-	if format == shared.CSV && len(cf) == 0 {
-		return errors.New("at least provide one CSV file")
-	}
-	if format == shared.JSONL && len(jf) == 0 {
-		return errors.New("at least provide one JSONL file")
-	}
-	if len(cf)+len(jf) == 0 {
-		return errors.New("at least provide one file")
+	if err := validateFileFormats(format, cf, jf); err != nil {
+		return err
 	}
 
 	lookUp, typeSetting := c.flagsMapI[LookUp], c.flagsMapS[Type]
@@ -141,7 +133,7 @@ func (c *CommandInfo) RunFormatSpecificLoaders(ctx context.Context, cf, jf []str
 	mu := new(sync.Mutex)
 	msgs := []string{}
 	pool := pool.New().WithErrors()
-	if len(cf) > 0 && (format == "csv" || format == "both") {
+	if len(cf) > 0 && (format == shared.CSV || format == shared.Both) {
 		pool.Go(func() error {
 			msg, err := csvloader.NewCSVLoader(cf, c.db, lookUp, typeSetting, concurrentRuns).Run(ctx)
 			mu.Lock()
@@ -150,7 +142,7 @@ func (c *CommandInfo) RunFormatSpecificLoaders(ctx context.Context, cf, jf []str
 			return err
 		})
 	}
-	if len(jf) > 0 && (format == "jsonl" || format == "both") {
+	if len(jf) > 0 && (format == shared.JSONL || format == shared.Both) {
 		pool.Go(func() error {
 			msg, err := jsonloader.New(jf, c.db, concurrentRuns, lookUp, typeSetting).Run(ctx)
 			mu.Lock()
@@ -164,6 +156,26 @@ func (c *CommandInfo) RunFormatSpecificLoaders(ctx context.Context, cf, jf []str
 	fmt.Println(strings.Join(msgs, "\n"))
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func isAcceptableFormat(format string) bool {
+	return format != shared.CSV && format != shared.JSONL && format != shared.Both
+}
+
+func validateFileFormats(format string, cf, jf []string) error {
+	if isAcceptableFormat(format) {
+		return fmt.Errorf("unknown file format %q is given for flag %q", format, "-f")
+	}
+	if format == shared.CSV && len(cf) == 0 {
+		return errors.New("at least provide one CSV file")
+	}
+	if format == shared.JSONL && len(jf) == 0 {
+		return errors.New("at least provide one JSONL file")
+	}
+	if len(cf)+len(jf) == 0 {
+		return errors.New("at least provide one file")
 	}
 	return nil
 }

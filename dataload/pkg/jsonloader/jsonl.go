@@ -15,6 +15,7 @@ import (
 	csv2 "github.com/anvesh9652/side-projects/dataload/pkg/csvloader/v2"
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
 	"github.com/anvesh9652/side-projects/shared"
+	"github.com/anvesh9652/side-projects/shared/reader"
 	"github.com/sourcegraph/conc/pool"
 )
 
@@ -119,11 +120,11 @@ func convertJsonlToCSV(w io.Writer, file string, cols []string) error {
 
 // this was 7-14sec faster
 func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
-	f, err := os.Open(file)
+	r, err := reader.NewFileGzipReader(file)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer r.Close()
 
 	cw := csv.NewWriter(w)
 	defer cw.Flush()
@@ -133,7 +134,7 @@ func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
 		return err
 	}
 
-	ar := NewAsyncReader(f, cw, cols)
+	ar := NewAsyncReader(r, cw, cols)
 	go ar.parseRows()
 
 	// collect all the errors and only print the actual error
@@ -217,12 +218,14 @@ func (j *JsonLoader) findTypesAndGetCols(file string) ([]string, []string, error
 
 		types []string
 	)
-	f, err := os.Open(file)
+
+	r, err := reader.NewFileGzipReader(file)
 	if err != nil {
 		return nil, nil, err
 	}
+	defer r.Close()
 
-	dec := json.NewDecoder(f)
+	dec := json.NewDecoder(r)
 	for i := 0; i < j.lookUpSize && dec.More(); i++ {
 		var r row
 		if err = dec.Decode(&r); err != nil {

@@ -6,14 +6,14 @@ import (
 	"log"
 	"os"
 
-	"github.com/anvesh9652/side-projects/shared"
+	. "github.com/anvesh9652/side-projects/shared"
 	"github.com/spf13/cobra"
 )
 
 var (
 	version = "1.0.0"
-	example = `1. load file1.csv file2.csv file3.csv
-2. load -f jsonl file1.json file2.json
+	example = `1. load file1.csv file2.csv file3.csv.gz
+2. load -f jsonl file1.json file2.jsonl file3.json.gz
 3. load -p 54321 data.csv
 4. load -f both -p 54321 data.csv data.json all_files/*
 5. load -U test -P 123 -d temp -s testing -u "localhost:123" file_2*.csv test1.csv dummy/*/*.csv`
@@ -70,8 +70,8 @@ func init() {
 	pflags.StringP(Schema, "s", "public", "schema name")
 	pflags.StringP(URL, "u", "localhost:5432", "connection string to connect to the server")
 	pflags.StringP(Port, "p", "", "postgres server localhost port number")
-	pflags.StringP(Type, "t", shared.Dynamic, "setting(dynamic, alltext) used to assign type for table columns")
-	pflags.StringP(Format, "f", "csv", "the format of the data that was being loaded. supports(jsonl, csv, both)")
+	pflags.StringP(Type, "t", Dynamic, "setting(dynamic, alltext) used to assign type for table columns")
+	pflags.StringP(Format, "f", CSV, fmt.Sprintf("the format of the data that was being loaded. supports: %s, %s, %s", CSV, JSONL, Both))
 
 	// Boolean flags
 	pflags.BoolP(Reset, "r", false, "reset tables if exists by default set to true")
