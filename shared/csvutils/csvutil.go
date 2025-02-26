@@ -37,7 +37,7 @@ func FindColumnTypes(path string, lookUpSize int, typeSetting *string) (map[stri
 	if err != nil {
 		return nil, err
 	}
-	r.Close()
+	defer r.Close()
 	csvr := csv.NewReader(r)
 	headers, err := csvr.Read()
 	if err != nil {

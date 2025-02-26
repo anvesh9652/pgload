@@ -67,6 +67,10 @@ func (c *CSVLoader) Run(ctx context.Context) (string, error) {
 		}
 
 		r, err := reader.NewFileGzipReader(file)
+		if err != nil{
+			printError(file, name, err)
+			return err
+		}
 		defer r.Close()
 
 		rowsInserted, err := LoadCSV(ctx, r, name, c.db)
