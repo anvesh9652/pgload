@@ -72,12 +72,15 @@ func Check(err error, msg string, v ...any) {
 	}
 }
 
-func WriteToAsJson(data any, w io.Writer) {
-	bytes, err := json.Marshal(data)
+func PrettyPrintJson(data any, w io.Writer) {
+	if w == nil{
+		w = os.Stdout
+	}
+	bytes, err := json.MarshalIndent(data, "", "\t")
 	if err != nil {
 		log.Fatal(err, "write to json is failed")
 	}
-	_, _ = w.Write(append(bytes, '\n'))
+	w.Write(bytes)
 }
 
 func GetFileSize(path string) (res string) {

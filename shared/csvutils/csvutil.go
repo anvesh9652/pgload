@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"unicode"
 
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
 	"github.com/anvesh9652/side-projects/shared"
@@ -38,8 +39,8 @@ func FindColumnTypes(path string, lookUpSize int, typeSetting *string) (map[stri
 		return nil, err
 	}
 	defer r.Close()
-	csvr := csv.NewReader(r)
-	headers, err := csvr.Read()
+	headers, br, err := GetCSVHeaders(r)
+	csvr := csv.NewReader(br)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +99,6 @@ func findType(val string, typeSetting *string) string {
 	return dbv2.Text
 }
 
-// 
 func GetCSVHeaders(r io.Reader) ([]string, io.Reader, error) {
 	// didn't find the best way to get only first row
 	// no need to worry here if `br` reads more than first row
@@ -119,5 +119,18 @@ func GetCSVHeaders(r io.Reader) ([]string, io.Reader, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to read first line: %v", err)
 	}
-	return headers, br, nil
+
+	return preserveExactColNames(headers), br, nil
+}
+
+func preserveExactColNames(headers []string) []string {
+	var quotedCols []string
+	for _, orgCol := range headers {
+		quotedCols = append(quotedCols, strconv.Quote(orgCol))
+	}
+	return quotedCols
+}
+
+func isLetterDigit(r rune) bool {
+	return unicode.IsDigit(r) || unicode.IsLetter(r)
 }
