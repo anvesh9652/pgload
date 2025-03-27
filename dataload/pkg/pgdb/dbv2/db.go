@@ -34,16 +34,16 @@ func NewPostgresDB(ctx context.Context, url, schema string, reset bool) (*DB, er
 }
 
 func (d *DB) GetRows(ctx context.Context, table string) error {
-	q := fmt.Sprintf("select * from %s.%s limit 10", d.schema, table)
+	q := fmt.Sprintf("SELECT * FROM %s.%s LIMIT 10", d.schema, table)
 	rows, err := d.dbConn.QueryxContext(ctx, q)
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		row := map[string]any{}
 		if err = rows.MapScan(row); err != nil {
-			fmt.Println("here")
 			return err
 		}
 		fmt.Println(row)
@@ -55,7 +55,6 @@ func (d *DB) EnsureSchema() error {
 	_, err := d.dbConn.Exec("CREATE SCHEMA " + d.schema)
 	if err != nil {
 		if !strings.Contains(err.Error(), fmt.Sprintf(`schema "%s" already exists`, d.schema)) {
-			fmt.Println("here?")
 			return err
 		}
 	}

@@ -58,7 +58,7 @@ func failOnError(err error) {
 	if err == nil {
 		return
 	}
-	fmt.Fprint(os.Stderr, err.Error())
+	fmt.Fprintln(os.Stderr, err.Error())
 	os.Exit(1)
 }
 
