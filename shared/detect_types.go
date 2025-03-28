@@ -9,7 +9,7 @@ import (
 	"github.com/buger/jsonparser"
 )
 
-const MaxRowsReadLimit = 10_000
+const MaxRowsReadLimit = 25_000
 
 // Takes a reader as a parameter where the data inside it is JSONL.
 func FindColumnTypes(r io.Reader, rowsReadLimit int, typeSetting string) ([]string, []string, error) {
