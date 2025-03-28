@@ -9,7 +9,6 @@ import (
 func main() {
 	log.SetFlags(0)
 	dataload.Execute()
-	// dataload.Execute()
 }
 
 /*
