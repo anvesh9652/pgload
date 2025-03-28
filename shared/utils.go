@@ -26,7 +26,7 @@ var (
 )
 
 func GetTableName(file string) string {
-	// Table names are created with lowercase letters
+	// Table names are being created with lowercase letters in pg
 	// even if we pass uppercase letters.
 	file = strings.ToLower(file)
 	pathSplit := strings.Split(file, "/")

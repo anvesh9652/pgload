@@ -77,7 +77,7 @@ func (j *JsonLoader) Run(ctx context.Context) (string, error) {
 		p := pool.New().WithErrors().WithFirstError()
 		p.Go(func() error {
 			defer pw.Close()
-			return convertJsonlToCSV2(pw, file, cols)
+			return convertJsonlToCSV(pw, file, cols)
 		})
 
 		rowsInserted, err := csv2.LoadCSV(ctx, pr, name, j.db)
@@ -101,7 +101,7 @@ func (j *JsonLoader) Run(ctx context.Context) (string, error) {
 }
 
 // this was 7-14sec faster
-func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
+func convertJsonlToCSV(w io.Writer, file string, cols []string) (err error) {
 	r, err := reader.NewFileGzipReader(file)
 	if err != nil {
 		return err
@@ -150,26 +150,6 @@ func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
 	}
 	if idx > 0 {
 		return cw.WriteAll(rows[:idx])
-	}
-	return nil
-}
-
-// make use of bulk writes
-func writeAsCSV(cw *csv.Writer, dec *json.Decoder, cols []string) error {
-	var err error
-	for dec.More() {
-		var r row
-		if err = dec.Decode(&r); err != nil {
-			return err
-		}
-		csvRow := make([]string, len(cols))
-		for i, header := range cols {
-			csvRow[i] = toString(r[header])
-		}
-
-		if err = cw.Write(csvRow); err != nil {
-			return err
-		}
 	}
 	return nil
 }
