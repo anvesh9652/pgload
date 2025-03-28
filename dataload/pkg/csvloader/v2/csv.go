@@ -67,7 +67,7 @@ func (c *CSVLoader) Run(ctx context.Context) (string, error) {
 		}
 
 		r, err := reader.NewFileGzipReader(file)
-		if err != nil{
+		if err != nil {
 			printError(file, name, err)
 			return err
 		}

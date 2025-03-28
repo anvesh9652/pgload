@@ -22,8 +22,7 @@ const (
 var (
 	CSV   = "csv"
 	JSONL = "jsonl"
-
-	Both = "both"
+	Both  = "both"
 )
 
 func GetTableName(file string) string {
@@ -73,7 +72,7 @@ func Check(err error, msg string, v ...any) {
 }
 
 func PrettyPrintJson(data any, w io.Writer) {
-	if w == nil{
+	if w == nil {
 		w = os.Stdout
 	}
 	bytes, err := json.MarshalIndent(data, "", "\t")

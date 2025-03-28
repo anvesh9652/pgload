@@ -91,10 +91,10 @@ func findType(val string, typeSetting *string) string {
 	}
 
 	if _, err := strconv.ParseInt(val, 10, 64); err == nil {
-		return dbv2.Integer
+		return dbv2.Numeric
 	}
 	if _, err := strconv.ParseFloat(val, 64); err == nil {
-		return dbv2.Float
+		return dbv2.Numeric
 	}
 	return dbv2.Text
 }
