@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -98,24 +97,6 @@ func (j *JsonLoader) Run(ctx context.Context) (string, error) {
 	msg := fmt.Sprintf(`msg="final load stats" data_format=%q total=%d success=%d failed=%d total_rows_inserted=%s took=%s`,
 		"JSONL", len(j.filesList), len(j.filesList)-int(failed), failed, shared.FormatNumber(totalRowsInserted), time.Since(start))
 	return msg, err
-}
-
-func convertJsonlToCSV(w io.Writer, file string, cols []string) error {
-	f, err := os.Open(file)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	cw := csv.NewWriter(w)
-	defer cw.Flush()
-
-	// write cols first
-	if err = cw.Write(cols); err != nil {
-		return err
-	}
-	dec := json.NewDecoder(f)
-	return writeAsCSV(cw, dec, cols)
 }
 
 // this was 7-14sec faster
@@ -212,76 +193,15 @@ func toString(val any) string {
 }
 
 func (j *JsonLoader) findTypesAndGetCols(file string) ([]string, []string, error) {
-	var (
-		rows    []row
-		headers = make(map[string]struct{})
-
-		types []string
-	)
-
 	r, err := reader.NewFileGzipReader(file)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer r.Close()
 
-	dec := json.NewDecoder(r)
-	for i := 0; i < j.lookUpSize && dec.More(); i++ {
-		var r row
-		if err = dec.Decode(&r); err != nil {
-			return nil, nil, err
-		}
-		// we running this for all rows just to ensure that we get all the keys,
-		// sometime a row might have less keys compared to the previous row
-		for col := range r {
-			headers[col] = struct{}{}
-		}
-		rows = append(rows, r)
-	}
-
-	var colsList []string
-	for header := range headers {
-		colsList = append(colsList, header)
-		if j.typeSetting == shared.AllText {
-			types = append(types, header+" "+dbv2.Text)
-			continue
-		}
-
-		uniqueTypes := map[string]int{}
-		for _, row := range rows {
-			val := row[header]
-			uniqueTypes[getType(val)]++
-		}
-
-		types = append(types, header+" "+maxRecordedType(uniqueTypes))
-	}
-	return types, colsList, nil
-}
-
-func getType(val any) string {
-	switch val.(type) {
-	case float64, int:
-		return dbv2.Float
-	case string:
-		return dbv2.Text
-	case []any, map[string]any:
-		return dbv2.Json
-	default:
-		return dbv2.Text
-	}
-}
-
-func maxRecordedType(types map[string]int) string {
-	if types[dbv2.Text] > 0 {
-		return dbv2.Text
-	}
-	val, res := -1, dbv2.Text
-	for k, v := range types {
-		if v > val {
-			val, res = v, k
-		}
-	}
-	return res
+	// Even though typesetting was text we should some rows, to find out all columns that exists.
+	// In jsonl a row might have less keys and others might have more keys. So we need all of those keys
+	return shared.FindColumnTypes(r, j.lookUpSize, j.typeSetting)
 }
 
 func printError(f, name string, err error) {

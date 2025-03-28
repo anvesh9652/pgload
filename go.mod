@@ -3,6 +3,7 @@ module github.com/anvesh9652/side-projects
 go 1.22.2
 
 require (
+	github.com/buger/jsonparser v1.1.1
 	github.com/dustin/go-humanize v1.0.1
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/jmoiron/sqlx v1.4.0
