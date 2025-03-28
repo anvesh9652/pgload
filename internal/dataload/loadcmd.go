@@ -1,4 +1,4 @@
-package pkg
+package dataload
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	. "github.com/anvesh9652/side-projects/shared"
+	. "github.com/anvesh9652/side-projects/pkg/shared"
 	"github.com/spf13/cobra"
 )
 
