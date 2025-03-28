@@ -65,6 +65,7 @@ func (j *JsonLoader) Run(ctx context.Context) (string, error) {
 			return err
 		}
 
+		// Ensure the table exists or create it if necessary.
 		err = j.db.EnsureTable(name, fmt.Sprintf("(%s)", strings.Join(colsTypes, ", ")))
 		if err != nil {
 			printError(file, name, err)
@@ -110,7 +111,7 @@ func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
 	cw := csv.NewWriter(w)
 	defer cw.Flush()
 
-	// write cols first
+	// Write column headers first.
 	if err = cw.Write(cols); err != nil {
 		return err
 	}
@@ -118,7 +119,7 @@ func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
 	ar := NewAsyncReader(r, cw, cols)
 	go ar.parseRows()
 
-	// collect all the errors and only print the actual error
+	// Collect all errors and only return the first one.
 	var firstErr error
 	defer func() {
 		close(ar.ErrCh)
@@ -181,6 +182,7 @@ func toString(val any) string {
 		return fmt.Sprintf("%f", t)
 	case string:
 		return t
+	// Handle JSON arrays and objects by converting them to strings.
 	case []any, map[string]any:
 		bt, _ := json.Marshal(t)
 		return string(bt)
@@ -199,8 +201,8 @@ func (j *JsonLoader) findTypesAndGetCols(file string) ([]string, []string, error
 	}
 	defer r.Close()
 
-	// Even though typesetting was text we should some rows, to find out all columns that exists.
-	// In jsonl a row might have less keys and others might have more keys. So we need all of those keys
+	// Even though the type setting is text, we should read some rows to find all columns that exist.
+	// In JSONL, a row might have fewer keys, while others might have more keys. So we need all of those keys.
 	return shared.FindColumnTypes(r, j.lookUpSize, j.typeSetting)
 }
 

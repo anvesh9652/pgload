@@ -100,8 +100,8 @@ func findType(val string, typeSetting *string) string {
 }
 
 func GetCSVHeaders(r io.Reader) ([]string, io.Reader, error) {
-	// didn't find the best way to get only first row
-	// no need to worry here if `br` reads more than first row
+	// Didn't find the best way to get only the first row.
+	// No need to worry here if `br` reads more than the first row.
 	br := bufio.NewReader(r)
 	buff := bytes.NewBuffer(nil)
 	for {
@@ -123,6 +123,7 @@ func GetCSVHeaders(r io.Reader) ([]string, io.Reader, error) {
 	return preserveExactColNames(headers), br, nil
 }
 
+// Preserve the exact column names by quoting them.
 func preserveExactColNames(headers []string) []string {
 	var quotedCols []string
 	for _, orgCol := range headers {

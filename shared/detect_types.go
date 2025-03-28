@@ -11,11 +11,11 @@ import (
 
 const MaxRowsReadLimit = 10_000
 
-// takes a reader as param where the data inside it was jsonl
+// Takes a reader as a parameter where the data inside it is JSONL.
 func FindColumnTypes(r io.Reader, rowsReadLimit int, typeSetting string) ([]string, []string, error) {
 	rowsReadLimit = min(rowsReadLimit, MaxRowsReadLimit)
 
-	// column and respective types we have encountered
+	// Column and respective types we have encountered.
 	columnTypes := make(map[string]map[string]int)
 
 	scanner := bufio.NewScanner(r)
@@ -32,7 +32,7 @@ func FindColumnTypes(r io.Reader, rowsReadLimit int, typeSetting string) ([]stri
 			case jsonparser.Number:
 				types[dbv2.Numeric]++
 			case jsonparser.Null:
-				// just ignore the type detection for value
+				// Just ignore the type detection for this value.
 			case jsonparser.Array, jsonparser.Object:
 				types[dbv2.Json]++
 			default:
