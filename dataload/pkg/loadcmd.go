@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	. "github.com/anvesh9652/side-projects/shared"
+	. "github.com/anvesh9652/pgload/shared"
 	"github.com/spf13/cobra"
 )
 

@@ -14,7 +14,7 @@ Note: `JSONL` means the files where each row is a `JSON` object
 
 ## How to install
 ```sh
-go install github.com/anvesh9652/side-projects/dataload/cmd/load@latest
+go install github.com/anvesh9652/pgload/dataload/cmd/load@latest
 ```
 
 ## Help and Example Commands

@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"unicode"
 
-	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
-	"github.com/anvesh9652/side-projects/shared"
-	"github.com/anvesh9652/side-projects/shared/reader"
+	"github.com/anvesh9652/pgload/dataload/pkg/pgdb/dbv2"
+	"github.com/anvesh9652/pgload/shared"
+	"github.com/anvesh9652/pgload/shared/reader"
 )
 
 func NewCSVReaderAndColumns(path string) (*csv.Reader, []string, error) {

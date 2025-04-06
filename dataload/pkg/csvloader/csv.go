@@ -8,10 +8,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb"
-	"github.com/anvesh9652/side-projects/dataload/pkg/streams"
-	"github.com/anvesh9652/side-projects/shared"
-	"github.com/anvesh9652/side-projects/shared/csvutils"
+	"github.com/anvesh9652/pgload/dataload/pkg/pgdb"
+	"github.com/anvesh9652/pgload/dataload/pkg/streams"
+	"github.com/anvesh9652/pgload/shared"
+	"github.com/anvesh9652/pgload/shared/csvutils"
 )
 
 var BatchSize = 400

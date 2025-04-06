@@ -1,4 +1,4 @@
-module github.com/anvesh9652/side-projects
+module github.com/anvesh9652/pgload
 
 go 1.22.2
 

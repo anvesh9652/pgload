@@ -8,10 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
-	"github.com/anvesh9652/side-projects/shared"
-	"github.com/anvesh9652/side-projects/shared/csvutils"
-	"github.com/anvesh9652/side-projects/shared/reader"
+	"github.com/anvesh9652/pgload/dataload/pkg/pgdb/dbv2"
+	"github.com/anvesh9652/pgload/shared"
+	"github.com/anvesh9652/pgload/shared/csvutils"
+	"github.com/anvesh9652/pgload/shared/reader"
 )
 
 const (
