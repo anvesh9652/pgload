@@ -1,6 +1,6 @@
-# `pgload`: Faster Loading for CSV & JSONL Data into PostgreSQL
+# `load`: Faster Loading for CSV & JSONL Data into PostgreSQL
 
-Loading large `CSV` or `JSONL` files into PostgreSQL can often be a slow process. `pgload or load` is a command-line tool designed to help speed this up. It leverages PostgreSQL's efficient `COPY` command and parallel processing to handle large datasets, including multi-gigabyte files with millions of rows, more effectively than standard single-file insertion methods.
+Loading large `CSV` or `JSONL` files into PostgreSQL can often be a slow process. `load` is a command-line tool designed to help speed this up. It leverages PostgreSQL's efficient `COPY` command and parallel processing to handle large datasets, including multi-gigabyte files with millions of rows, more effectively than standard single-file insertion methods.
 
 This tool can be particularly helpful when you need to regularly import large data files and want to automate parts of the process, like table creation.
 
@@ -79,7 +79,7 @@ load -U test -P 123 -d temp -s testing -u "localhost:123" file_2*.csv test1.csv 
 
 ## Loading Speed Examples
 
-These examples show `pgload or load`'s performance loading large files on specific hardware (**MacBook Pro 15-inch, M1 Pro, 10 cores, 16GB RAM**). Your results may vary based on your hardware, database configuration, and network.
+These examples show `load`'s performance loading large files on specific hardware (**MacBook Pro 15-inch, M1 Pro, 10 cores, 16GB RAM**). Your results may vary based on your hardware, database configuration, and network.
 
 <details>
     <summary><b><code>JSONL</code> File Loading Examples</b></summary>
