@@ -13,7 +13,7 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-const (
+var (
 	Dynamic = "dynamic"
 	AllText = "alltext"
 )

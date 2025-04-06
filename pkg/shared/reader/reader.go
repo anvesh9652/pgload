@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/anvesh9652/pgload/shared"
+	"github.com/anvesh9652/pgload/pkg/shared"
 )
 
 type FileGzipReader struct {

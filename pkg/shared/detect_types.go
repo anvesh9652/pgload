@@ -5,7 +5,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/anvesh9652/pgload/dataload/pkg/pgdb/dbv2"
+	"github.com/anvesh9652/pgload/internal/pgdb/dbv2"
 	"github.com/buger/jsonparser"
 )
 

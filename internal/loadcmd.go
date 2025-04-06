@@ -1,4 +1,4 @@
-package pkg
+package internal
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	. "github.com/anvesh9652/pgload/shared"
+	. "github.com/anvesh9652/pgload/pkg/shared"
 	"github.com/spf13/cobra"
 )
 
