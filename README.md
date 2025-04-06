@@ -77,12 +77,12 @@ load -U test -P 123 -d temp -s testing -u "localhost:123" file_2*.csv test1.csv 
 
 *(Note: Table names are inferred from filenames.)*
 
-## Loading Speed Examples
+## Loading Speed Stats 
 
 These examples show `load`'s performance loading large files on specific hardware (**MacBook Pro 15-inch, M1 Pro, 10 cores, 16GB RAM**). Your results may vary based on your hardware, database configuration, and network.
 
 <details>
-    <summary><b><code>JSONL</code> File Loading Examples</b></summary>
+    <summary><b><code>JSONL</code> File Loading Stats</b></summary>
 
 *   **3.3 Million Rows / 4.5GB Uncompressed JSONL:** ~55 seconds
     ```
@@ -114,7 +114,18 @@ These examples show `load`'s performance loading large files on specific hardwar
 </details>
 
 <details>
-    <summary><b><code>CSV</code> File Loading Examples</b></summary>
+    <summary><b><code>CSV</code> File Loading Stats</b></summary>
+
+*   `JetBrains IDE(goland)` ~2min vs `load` ~41 sec
+<br></br>
+![alt text](/images/jetbrains.png)
+<br></br>
+![alt text](/images/load.png)
 
 *(CSV loading examples will be added here. Generally, expect faster times than JSONL due to the direct use of `COPY` without the conversion step.)*
 </details>
+
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
