@@ -11,10 +11,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	csv2 "github.com/anvesh9652/side-projects/dataload/pkg/csvloader/v2"
-	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
-	"github.com/anvesh9652/side-projects/shared"
-	"github.com/anvesh9652/side-projects/shared/reader"
+	csv2 "github.com/anvesh9652/pgload/internal/csvloader/v2"
+	"github.com/anvesh9652/pgload/internal/pgdb/dbv2"
+	"github.com/anvesh9652/pgload/pkg/shared"
+	"github.com/anvesh9652/pgload/pkg/shared/reader"
 	"github.com/sourcegraph/conc/pool"
 )
 

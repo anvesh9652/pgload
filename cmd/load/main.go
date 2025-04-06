@@ -3,12 +3,12 @@ package main
 import (
 	"log"
 
-	"github.com/anvesh9652/side-projects/dataload/pkg"
+	"github.com/anvesh9652/pgload/internal"
 )
 
 func main() {
 	log.SetFlags(0)
-	pkg.Execute()
+	internal.Execute()
 }
 
 /*

@@ -1,4 +1,4 @@
-package pkg
+package internal
 
 import (
 	"context"
@@ -10,10 +10,10 @@ import (
 
 	builterr "errors"
 
-	csvloader "github.com/anvesh9652/side-projects/dataload/pkg/csvloader/v2"
-	"github.com/anvesh9652/side-projects/dataload/pkg/jsonloader"
-	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
-	"github.com/anvesh9652/side-projects/shared"
+	csvloader "github.com/anvesh9652/pgload/internal/csvloader/v2"
+	"github.com/anvesh9652/pgload/internal/jsonloader"
+	"github.com/anvesh9652/pgload/internal/pgdb/dbv2"
+	"github.com/anvesh9652/pgload/pkg/shared"
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/conc/pool"
 	"github.com/spf13/cobra"
