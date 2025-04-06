@@ -13,5 +13,4 @@ func main() {
 
 /*
 Bugs:
-- running load immediately after deleting schema giving schema relation already exists error
 */

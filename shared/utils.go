@@ -22,24 +22,23 @@ const (
 var (
 	CSV   = "csv"
 	JSONL = "jsonl"
-
-	Both = "both"
+	Both  = "both"
 )
 
 func GetTableName(file string) string {
-	// Table names are being created with lowercase letters
-	// even if we pass uppercase letters
+	// Table names are being created with lowercase letters in pg
+	// even if we pass uppercase letters.
 	file = strings.ToLower(file)
 	pathSplit := strings.Split(file, "/")
 	N := len(pathSplit)
-	// we are sure that we will always have a proper file name that can be either .csv or .json or .gz
-	// so no need to have any checks around idx
+	// We are sure that we will always have a proper file name that can be either .csv or .json or .gz,
+	// so no need to have any checks around idx.
 	name := getFileName(pathSplit[N-1])
 	if len(pathSplit) > 1 {
 		name = pathSplit[N-2] + "_" + name
 	}
 	if unicode.IsDigit(rune(name[0])) {
-		// we can't have a table name that start's with digit
+		// We can't have a table name that starts with a digit.
 		name = "t" + name
 	}
 	var final string
@@ -72,12 +71,16 @@ func Check(err error, msg string, v ...any) {
 	}
 }
 
-func WriteToAsJson(data any, w io.Writer) {
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		log.Fatal(err, "write to json is failed")
+func PrettyPrintJson(data any, w io.Writer) {
+	if w == nil {
+		w = os.Stdout
 	}
-	_, _ = w.Write(append(bytes, '\n'))
+	bytes, err := json.MarshalIndent(data, "", "\t")
+	if err != nil {
+		// Write to JSON failed.
+		log.Fatal(err, "write to JSON failed")
+	}
+	w.Write(bytes)
 }
 
 func GetFileSize(path string) (res string) {
@@ -144,6 +147,7 @@ func RunInParallel(numWorkers int, items []string, fn func(item string) error) e
 }
 
 func IsGZIPFile(name string) bool {
+	// Check if the file is a GZIP file.
 	return strings.HasSuffix(name, ".gz")
 }
 

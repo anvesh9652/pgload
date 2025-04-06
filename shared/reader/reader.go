@@ -14,7 +14,7 @@ type FileGzipReader struct {
 	gzReader     *gzip.Reader
 }
 
-// return a reader which internally handles both compressed and uncompressed files
+// Return a reader that internally handles both compressed and uncompressed files.
 func NewFileGzipReader(file string) (io.ReadCloser, error) {
 	f, err := os.Open(file)
 	if err != nil {
@@ -38,6 +38,7 @@ func (r *FileGzipReader) Read(p []byte) (int, error) {
 	return r.actualReader.Read(p)
 }
 
+// Close both the GZIP reader and the actual file reader.
 func (r *FileGzipReader) Close() error {
 	var err error
 	if r.gzReader != nil {

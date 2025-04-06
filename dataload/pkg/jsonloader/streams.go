@@ -13,8 +13,8 @@ var jsoni = jsoniter.ConfigFastest
 
 const (
 	chanSize = 50
-	// after multiple tries seems 6 MB was a sweet spot
-	buffSize = 6 * 1024 * 1024 // 10 MB (also)
+	// After multiple tries, 6 MB seems to be the optimal buffer size.
+	buffSize = 6 * 1024 * 1024 // 10 MB also
 
 	numWorkers = 5
 )
@@ -49,6 +49,7 @@ func NewAsyncReader(r io.Reader, cw *csv.Writer, cols []string) *AsyncReader {
 	buff := make([]byte, buffSize)
 	var leftOver []byte
 
+	// Handle both compressed and uncompressed files.
 	go func() {
 		for {
 			n, err := r.Read(buff)
@@ -75,7 +76,7 @@ func NewAsyncReader(r io.Reader, cw *csv.Writer, cols []string) *AsyncReader {
 	return w
 }
 
-// Lesson: go std package writers are not thread safe
+// Learning: Go standard library writers are not thread-safe.
 func (a *AsyncReader) parseRows() {
 	wg := new(sync.WaitGroup)
 	defer close(a.OutCh)
@@ -122,7 +123,8 @@ func (a *AsyncReader) sendToOutput(dec *jsoniter.Decoder) error {
 func getNewLineLastIndex(buff []byte) int {
 	n := len(buff)
 	for i := n - 1; i >= 0; i-- {
-		if buff[i] == 10 { // new line "\n" ASCII value is "10"
+		// Newline "\n" ASCII value is 10.
+		if buff[i] == 10 {
 			return i
 		}
 	}

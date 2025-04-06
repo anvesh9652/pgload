@@ -60,6 +60,7 @@ func (c *CSVLoader) Run(ctx context.Context) (string, error) {
 		}
 		columnAndTypes := csvutils.BuildColumnTypeStr(columnTypes)
 
+		// Ensure the table exists or create it if necessary.
 		err = c.db.EnsureTable(name, fmt.Sprintf("(%s)", strings.Join(columnAndTypes, ", ")))
 		if err != nil {
 			printError(file, name, err)
@@ -67,7 +68,7 @@ func (c *CSVLoader) Run(ctx context.Context) (string, error) {
 		}
 
 		r, err := reader.NewFileGzipReader(file)
-		if err != nil{
+		if err != nil {
 			printError(file, name, err)
 			return err
 		}
@@ -93,6 +94,7 @@ func LoadCSV(ctx context.Context, r io.Reader, table string, db *dbv2.DB) (int64
 	if err != nil {
 		return 0, err
 	}
+	// Use PostgreSQL's COPY command for efficient data loading.
 	copyCmd := fmt.Sprintf(`COPY %s.%s(%s) FROM STDIN with DELIMITER %s %s`,
 		db.Schema(), table, strings.Join(headers, ", "), Delimiter, DataFormat,
 	)

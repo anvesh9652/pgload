@@ -58,7 +58,7 @@ func failOnError(err error) {
 	if err == nil {
 		return
 	}
-	fmt.Fprint(os.Stderr, err.Error())
+	fmt.Fprintln(os.Stderr, err.Error())
 	os.Exit(1)
 }
 
@@ -69,12 +69,12 @@ func init() {
 	pflags.StringP(Database, "d", "postgres", "database name")
 	pflags.StringP(Schema, "s", "public", "schema name")
 	pflags.StringP(URL, "u", "localhost:5432", "connection string to connect to the server")
-	pflags.StringP(Port, "p", "", "postgres server localhost port number")
-	pflags.StringP(Type, "t", Dynamic, "setting(dynamic, alltext) used to assign type for table columns")
-	pflags.StringP(Format, "f", CSV, fmt.Sprintf("the format of the data that was being loaded. supports: %s, %s, %s", CSV, JSONL, Both))
+	pflags.StringP(Port, "p", "", "Postgres server localhost port number")
+	pflags.StringP(Type, "t", Dynamic, "setting (dynamic, alltext) used to assign type for table columns")
+	pflags.StringP(Format, "f", CSV, fmt.Sprintf("the format of the data that is being loaded. Supports: %s, %s, %s", CSV, JSONL, Both))
 
-	// Boolean flags
-	pflags.BoolP(Reset, "r", false, "reset tables if exists by default set to true")
+	// Reset tables if they exist; by default, set to true.
+	pflags.BoolP(Reset, "r", false, "reset tables if they exist; by default, set to true")
 
-	pflags.IntP(LookUp, "l", 400, "look first n number of rows to find column types")
+	pflags.IntP(LookUp, "l", 400, "looks up first n number of rows to find column types")
 }

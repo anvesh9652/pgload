@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -66,6 +65,7 @@ func (j *JsonLoader) Run(ctx context.Context) (string, error) {
 			return err
 		}
 
+		// Ensure the table exists or create it if necessary.
 		err = j.db.EnsureTable(name, fmt.Sprintf("(%s)", strings.Join(colsTypes, ", ")))
 		if err != nil {
 			printError(file, name, err)
@@ -77,7 +77,7 @@ func (j *JsonLoader) Run(ctx context.Context) (string, error) {
 		p := pool.New().WithErrors().WithFirstError()
 		p.Go(func() error {
 			defer pw.Close()
-			return convertJsonlToCSV2(pw, file, cols)
+			return convertJsonlToCSV(pw, file, cols)
 		})
 
 		rowsInserted, err := csv2.LoadCSV(ctx, pr, name, j.db)
@@ -100,26 +100,8 @@ func (j *JsonLoader) Run(ctx context.Context) (string, error) {
 	return msg, err
 }
 
-func convertJsonlToCSV(w io.Writer, file string, cols []string) error {
-	f, err := os.Open(file)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	cw := csv.NewWriter(w)
-	defer cw.Flush()
-
-	// write cols first
-	if err = cw.Write(cols); err != nil {
-		return err
-	}
-	dec := json.NewDecoder(f)
-	return writeAsCSV(cw, dec, cols)
-}
-
 // this was 7-14sec faster
-func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
+func convertJsonlToCSV(w io.Writer, file string, cols []string) (err error) {
 	r, err := reader.NewFileGzipReader(file)
 	if err != nil {
 		return err
@@ -129,7 +111,7 @@ func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
 	cw := csv.NewWriter(w)
 	defer cw.Flush()
 
-	// write cols first
+	// Write column headers first.
 	if err = cw.Write(cols); err != nil {
 		return err
 	}
@@ -137,7 +119,7 @@ func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
 	ar := NewAsyncReader(r, cw, cols)
 	go ar.parseRows()
 
-	// collect all the errors and only print the actual error
+	// Collect all errors and only return the first one.
 	var firstErr error
 	defer func() {
 		close(ar.ErrCh)
@@ -172,26 +154,6 @@ func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
 	return nil
 }
 
-// make use of bulk writes
-func writeAsCSV(cw *csv.Writer, dec *json.Decoder, cols []string) error {
-	var err error
-	for dec.More() {
-		var r row
-		if err = dec.Decode(&r); err != nil {
-			return err
-		}
-		csvRow := make([]string, len(cols))
-		for i, header := range cols {
-			csvRow[i] = toString(r[header])
-		}
-
-		if err = cw.Write(csvRow); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func toString(val any) string {
 	switch t := val.(type) {
 	case int:
@@ -200,6 +162,7 @@ func toString(val any) string {
 		return fmt.Sprintf("%f", t)
 	case string:
 		return t
+	// Handle JSON arrays and objects by converting them to strings.
 	case []any, map[string]any:
 		bt, _ := json.Marshal(t)
 		return string(bt)
@@ -212,76 +175,15 @@ func toString(val any) string {
 }
 
 func (j *JsonLoader) findTypesAndGetCols(file string) ([]string, []string, error) {
-	var (
-		rows    []row
-		headers = make(map[string]struct{})
-
-		types []string
-	)
-
 	r, err := reader.NewFileGzipReader(file)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer r.Close()
 
-	dec := json.NewDecoder(r)
-	for i := 0; i < j.lookUpSize && dec.More(); i++ {
-		var r row
-		if err = dec.Decode(&r); err != nil {
-			return nil, nil, err
-		}
-		// we running this for all rows just to ensure that we get all the keys,
-		// sometime a row might have less keys compared to the previous row
-		for col := range r {
-			headers[col] = struct{}{}
-		}
-		rows = append(rows, r)
-	}
-
-	var colsList []string
-	for header := range headers {
-		colsList = append(colsList, header)
-		if j.typeSetting == shared.AllText {
-			types = append(types, header+" "+dbv2.Text)
-			continue
-		}
-
-		uniqueTypes := map[string]int{}
-		for _, row := range rows {
-			val := row[header]
-			uniqueTypes[getType(val)]++
-		}
-
-		types = append(types, header+" "+maxRecordedType(uniqueTypes))
-	}
-	return types, colsList, nil
-}
-
-func getType(val any) string {
-	switch val.(type) {
-	case float64, int:
-		return dbv2.Float
-	case string:
-		return dbv2.Text
-	case []any, map[string]any:
-		return dbv2.Json
-	default:
-		return dbv2.Text
-	}
-}
-
-func maxRecordedType(types map[string]int) string {
-	if types[dbv2.Text] > 0 {
-		return dbv2.Text
-	}
-	val, res := -1, dbv2.Text
-	for k, v := range types {
-		if v > val {
-			val, res = v, k
-		}
-	}
-	return res
+	// Even though the type setting is text, we should read some rows to find all columns that exist.
+	// In JSONL, a row might have fewer keys, while others might have more keys. So we need all of those keys.
+	return shared.FindColumnTypes(r, j.lookUpSize, j.typeSetting)
 }
 
 func printError(f, name string, err error) {

@@ -92,31 +92,43 @@ func (c *CommandInfo) RunLoader(ctx context.Context) error {
 		return err
 	}
 
-	var csvFiles, jsonFiles []string
+	allFiles, err := c.collectFiles()
+	if err != nil {
+		return err
+	}
+
+	csvFiles, jsonFiles := c.categorizeFiles(allFiles)
+	return c.RunFormatSpecificLoaders(ctx, csvFiles, jsonFiles)
+}
+
+func (c *CommandInfo) collectFiles() ([]string, error) {
+	var allFiles []string
 	for _, arg := range c.args {
 		if strings.Contains(arg, "*") {
 			result, err := filepath.Glob(arg)
 			if err != nil {
-				return errors.Wrapf(err, "glob pattern matching failed: %s", arg)
+				return nil, errors.Wrapf(err, "glob pattern matching failed: %s", arg)
 			}
-			for _, file := range result {
-				if shared.IsCSVFile(file) {
-					csvFiles = append(csvFiles, file)
-				}
-				if shared.IsJSONFile(file) {
-					jsonFiles = append(jsonFiles, file)
-				}
-			}
-		} else {
-			if shared.IsCSVFile(arg) {
-				csvFiles = append(csvFiles, arg)
-			}
-			if shared.IsJSONFile(arg) {
-				jsonFiles = append(jsonFiles, arg)
-			}
+			allFiles = append(allFiles, result...)
+			continue
+		}
+		allFiles = append(allFiles, arg)
+	}
+	return allFiles, nil
+}
+
+func (c *CommandInfo) categorizeFiles(allFiles []string) ([]string, []string) {
+	var csvFiles, jsonFiles []string
+	for _, file := range allFiles {
+		if shared.IsCSVFile(file) {
+			csvFiles = append(csvFiles, file)
+			continue
+		}
+		if shared.IsJSONFile(file) {
+			jsonFiles = append(jsonFiles, file)
 		}
 	}
-	return c.RunFormatSpecificLoaders(ctx, csvFiles, jsonFiles)
+	return csvFiles, jsonFiles
 }
 
 func (c *CommandInfo) RunFormatSpecificLoaders(ctx context.Context, cf, jf []string) error {

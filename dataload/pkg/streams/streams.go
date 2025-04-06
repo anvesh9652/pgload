@@ -15,7 +15,7 @@ type AsyncStreams struct {
 
 	pool sync.Pool
 
-	// close these channels on client side
+	// Close these channels on the client side
 	Err chan error
 	Out chan []string
 }
@@ -65,8 +65,8 @@ func StarChunksStreaming(r io.Reader) *AsyncStreams {
 			leftOver = make([]byte, n-lastIndex-1)
 			copy(leftOver, buff[lastIndex+1:n])
 
-			// do not use this it's just a copy of buff's underlying array, so leftover will get
-			// change when buff get's updated in read
+			// Do not use this; it's just a copy of buff's underlying array, so leftover will get
+			// modified when buff gets updated in read.
 			// leftOver = buff[lastIndex+1:n]
 			as.in <- merged
 		}
@@ -89,7 +89,7 @@ func (a *AsyncStreams) Process() {
 				// buff.Reset()
 				// buff.Write(data)
 
-				// why the hell this is working but not pool one?
+				// Why is this working but not the pool one?
 				buff := bytes.NewBuffer(data)
 
 				csvReader := csv.NewReader(buff)
@@ -99,9 +99,9 @@ func (a *AsyncStreams) Process() {
 						if err == io.EOF {
 							break
 						}
-						// after getting first error we are closing chan, but other in progress
-						// go routines which encounter errors are also sending to this closed chan
-						// which causing panics, so find out
+						// After encountering the first error, we are closing the channel, but other in-progress
+						// goroutines that encounter errors are also sending to this closed channel,
+						// which causes panics. Investigate this.
 						a.Err <- err
 						return
 					}

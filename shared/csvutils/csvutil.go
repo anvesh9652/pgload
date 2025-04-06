@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"unicode"
 
 	"github.com/anvesh9652/side-projects/dataload/pkg/pgdb/dbv2"
 	"github.com/anvesh9652/side-projects/shared"
@@ -38,8 +39,8 @@ func FindColumnTypes(path string, lookUpSize int, typeSetting *string) (map[stri
 		return nil, err
 	}
 	defer r.Close()
-	csvr := csv.NewReader(r)
-	headers, err := csvr.Read()
+	headers, br, err := GetCSVHeaders(r)
+	csvr := csv.NewReader(br)
 	if err != nil {
 		return nil, err
 	}
@@ -90,18 +91,17 @@ func findType(val string, typeSetting *string) string {
 	}
 
 	if _, err := strconv.ParseInt(val, 10, 64); err == nil {
-		return dbv2.Integer
+		return dbv2.Numeric
 	}
 	if _, err := strconv.ParseFloat(val, 64); err == nil {
-		return dbv2.Float
+		return dbv2.Numeric
 	}
 	return dbv2.Text
 }
 
-// 
 func GetCSVHeaders(r io.Reader) ([]string, io.Reader, error) {
-	// didn't find the best way to get only first row
-	// no need to worry here if `br` reads more than first row
+	// Didn't find the best way to get only the first row.
+	// No need to worry here if `br` reads more than the first row.
 	br := bufio.NewReader(r)
 	buff := bytes.NewBuffer(nil)
 	for {
@@ -119,5 +119,19 @@ func GetCSVHeaders(r io.Reader) ([]string, io.Reader, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to read first line: %v", err)
 	}
-	return headers, br, nil
+
+	return preserveExactColNames(headers), br, nil
+}
+
+// Preserve the exact column names by quoting them.
+func preserveExactColNames(headers []string) []string {
+	var quotedCols []string
+	for _, orgCol := range headers {
+		quotedCols = append(quotedCols, strconv.Quote(orgCol))
+	}
+	return quotedCols
+}
+
+func isLetterDigit(r rune) bool {
+	return unicode.IsDigit(r) || unicode.IsLetter(r)
 }

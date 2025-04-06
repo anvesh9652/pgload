@@ -20,13 +20,13 @@ type DB struct {
 func NewPostgresDB(url string, schema string, reset bool) (*DB, error) {
 	conn, err := sql.Open("postgres", url)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to open db connection")
+		return nil, errors.Wrap(err, "failed to open DB connection")
 	}
 	if err = conn.Ping(); err != nil {
-		return nil, errors.WithMessage(err, "failed to ping db")
+		return nil, errors.WithMessage(err, "failed to ping DB")
 	}
 
-	fmt.Println("connected to database")
+	fmt.Println("Connected to the database")
 	return &DB{
 		schema:     schema,
 		dbConn:     conn,
@@ -35,10 +35,10 @@ func NewPostgresDB(url string, schema string, reset bool) (*DB, error) {
 }
 
 func (d *DB) EnsureTable(name string, tableSchema string) error {
-	// tables names are getting created with lower case letters
-	// even we pass upper case letters
+	// Table names are created with lowercase letters
+	// even if we pass uppercase letters.
 	createQuery := fmt.Sprintf("CREATE TABLE %s.%s %s", d.schema, name, tableSchema)
-	// to check if the schema exists
+	// Check if the schema exists.
 	_, err := d.dbConn.Exec(createQuery)
 	if err == nil {
 		return nil
@@ -79,7 +79,7 @@ func (d *DB) InsertRecords(name string, records []map[string]any, columns []stri
 		}
 		query += fmt.Sprintf("(%s),", strings.Join(listParams, ","))
 	}
-	// remove (,) at the end
+	// Remove the trailing comma.
 	query = query[:len(query)-1]
 	stmt, err := d.dbConn.Prepare(query)
 	if err != nil {
@@ -97,7 +97,7 @@ func (d *DB) CopyFrom(name string, r io.Reader) error {
 		return err
 	}
 
-	fmt.Println("hi there")
+	// Use PostgreSQL's COPY command for efficient data loading.
 	conn.Raw(func(driverConn any) error {
 		fmt.Printf("%T\n", driverConn)
 		// drc, err := driverConn.(*pg.Connector).Connect(ctx)

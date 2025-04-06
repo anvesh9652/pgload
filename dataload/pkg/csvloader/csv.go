@@ -25,7 +25,7 @@ type CSVLoader struct {
 	typeSetting string
 }
 
-// Warning: this doesn't support gz files
+// Warning: This doesn't support GZIP files.
 func NewCSVLoader(files []string, db *pgdb.DB, look int, t string, maxRuns int) *CSVLoader {
 	return &CSVLoader{
 		filesList:         files,
@@ -45,6 +45,7 @@ func (c *CSVLoader) Run() error {
 		columnAndTypes := csvutils.BuildColumnTypeStr(columnTypes)
 
 		name := shared.GetTableName(file)
+		// Ensure the table exists or create it if necessary.
 		err = c.db.EnsureTable(name, fmt.Sprintf("(%s)", strings.Join(columnAndTypes, ", ")))
 		if err != nil {
 			log.Printf("File: %s, name: %s, Error: %s\n,", file, name, err.Error())
@@ -113,6 +114,7 @@ func (c *CSVLoader) InsertRecordsInBatches2(path string) error {
 		close(asyncReader.Err)
 	}()
 	for record := range asyncReader.Out {
+		// Handle errors from the asynchronous reader.
 		if len(asyncReader.Err) > 0 {
 			return <-asyncReader.Err
 		}
