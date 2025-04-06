@@ -14,8 +14,6 @@ import (
 
 const (
 	Numeric = "NUMERIC"
-	Integer = "INTEGER"
-	Float   = "FLOAT"
 	Text    = "TEXT"
 	Json    = "JSON"
 )
