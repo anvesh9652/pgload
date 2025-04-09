@@ -116,11 +116,45 @@ These examples show `load`'s performance loading large files on specific hardwar
 <details>
     <summary><b><code>CSV</code> File Loading Stats</b></summary>
 
-*   `JetBrains IDE(goland)` ~2min vs `load` ~41 sec
+*   **`JetBrains IDE(goland)` ~2min vs `timescaledb-parallel-copy` ~43.5 sec(avg) vs `load` ~41 sec**
 <br></br>
 ![alt text](/images/jetbrains.png)
 <br></br>
 ![alt text](/images/load.png)
+<br></br>
+## Timescale-db-stats
+
+*  Created the table `converted_3m_timescale` with the same columns listed in the command, with each column type set as TEXT.
+
+* Runs with different configurations
+
+    ```sh
+    ❯ go run main.go --connection="host=localhost port=5432 user=postgres sslmode=disable" --table converted_3m_timescale --schema test3 --file "converted_3m.csv" "billing_account_id, service, sku, usage_start_time, usage_end_time, project, labels, system_labels, location, resource, tags, price, subscription, transaction_type, export_time, cost, currency, currency_conversion_rate, usage, credits, invoice, cost_type, adjustment_info, cost_at_list" --skip-header true            
+    2025/04/10 00:08:14 Copy command: COPY "test3"."converted_3m_timescale" FROM STDIN WITH DELIMITER ','  CSV
+    2025/04/10 00:08:59 total rows 3300001
+    COPY 3300001 took 45.508942916s
+    ```
+
+    ```sh
+    ❯ go run main.go --connection="host=localhost port=5432 user=postgres sslmode=disable" --table converted_3m_timescale --schema test3 --file "converted_3m.csv" "billing_account_id, service, sku, usage_start_time, usage_end_time, project, labels, system_labels, location, resource, tags, price, subscription, transaction_type, export_time, cost, currency, currency_conversion_rate, usage, credits, invoice, cost_type, adjustment_info, cost_at_list" --skip-header true --workers 8
+    2025/04/10 00:02:45 Copy command: COPY "test3"."converted_3m_timescale" FROM STDIN WITH DELIMITER ','  CSV
+    2025/04/10 00:03:26 total rows 3300001
+    COPY 3300001 took 41.389381459s
+    ```
+
+    ```sh
+    ❯ go run main.go --connection="host=localhost port=5432 user=postgres sslmode=disable" --table converted_3m_timescale --schema test3 --file "converted_3m.csv" "billing_account_id, service, sku, usage_start_time, usage_end_time, project, labels, system_labels, location, resource, tags, price, subscription, transaction_type, export_time, cost, currency, currency_conversion_rate, usage, credits, invoice, cost_type, adjustment_info, cost_at_list" --skip-header true --workers 5
+    2025/04/10 00:04:04 Copy command: COPY "test3"."converted_3m_timescale" FROM STDIN WITH DELIMITER ','  CSV
+    2025/04/10 00:04:49 total rows 3300001
+    COPY 3300001 took 45.222426583s
+    ```
+
+    ```sh
+    go run main.go --connection="host=localhost port=5432 user=postgres sslmode=disable" --table converted_3m_timescale --schema test3 --file "converted_3m.csv" "billing_account_id, service, sku, usage_start_time, usage_end_time, project, labels, system_labels, location, resource, tags, price, subscription, transaction_type, export_time, cost, currency, currency_conversion_rate, usage, credits, invoice, cost_type, adjustment_info, cost_at_list" --skip-header true --workers 5 --batch-size 10000
+    2025/04/10 00:06:01 Copy command: COPY "test3"."converted_3m_timescale" FROM STDIN WITH DELIMITER ','  CSV
+    2025/04/10 00:06:42 total rows 3300001
+    COPY 3300001 took 42.070157s
+    ```
 
 *(CSV loading examples will be added here. Generally, expect faster times than JSONL due to the direct use of `COPY` without the conversion step.)*
 </details>
