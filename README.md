@@ -110,7 +110,7 @@ These examples show `load`'s performance loading large files on specific hardwar
 *(Note: Example output slightly condensed. Full paths replaced.)*
 </details>
 
-<details open>
+<details >
 <summary><b><code>CSV</code> File Loading Stats & Comparison</b></summary>
 
 Tests performed using `converted_3m.csv` (3.3 Million rows, ~3.9GB) on the reference hardware.
