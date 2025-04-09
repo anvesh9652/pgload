@@ -42,7 +42,7 @@ Use these flags to customize the loading process:
 | `-h`, `--help`     | Show the help message and exit.                                                   | N/A               |
 | `-l`, `--lookup`   | Number of initial rows to scan for automatic schema detection (type inference). | `400`             |
 | `-P`, `--pass`     | Password for the specified PostgreSQL user.                                       | (none)            |
-| `-p`, `--port`     | PostgreSQL server port number (if not using `-u` or default).                     | `5432` |
+| `-p`, `--port`     | PostgreSQL server port number (if not using `-u` or default).                     | `5432`            |
 | `-r`, `--reset`    | Reset (DROP and recreate) tables if they already exist.                           | `true`            |
 | `-s`, `--schema`   | Target schema name in the database.                                               | `"public"`        |
 | `-t`, `--type`     | Column type strategy: `dynamic` (infer types) or `alltext` (use TEXT for all).  | `"dynamic"`       |
@@ -77,7 +77,7 @@ load -U test -P 123 -d temp -s testing -u "localhost:123" file_2*.csv test1.csv 
 
 *(Note: Table names are inferred from filenames.)*
 
-## Loading Speed Stats 
+## Loading Speed Stats
 
 These examples show `load`'s performance loading large files on specific hardware (**MacBook Pro 15-inch, M1 Pro, 10 cores, 16GB RAM**). Your results may vary based on your hardware, database configuration, and network.
 
@@ -85,18 +85,15 @@ These examples show `load`'s performance loading large files on specific hardwar
     <summary><b><code>JSONL</code> File Loading Stats</b></summary>
 
 *   **3.3 Million Rows / 4.5GB Uncompressed JSONL:** ~55 seconds
-    ```
-    ❯ load -f jsonl /path/to/usage_data_3m.json
+    ```    ❯ load -f jsonl /path/to/usage_data_3m.json
     status=SUCCESS rows_inserted=3.30M file_size=4.5GB file=/path/to/usage_data_3m.json ... took=54.72s
     ```
 *   **4.0 Million Rows / 5.5GB Uncompressed JSONL:** ~1 minute 2 seconds
-    ```
-    ❯ load -f jsonl /path/to/usage_data_4m.json
+    ```    ❯ load -f jsonl /path/to/usage_data_4m.json
     status=SUCCESS rows_inserted=4.00M file_size=5.5GB file=/path/to/usage_data_4m.json ... took=1m2.03s
     ```
 *   **5.5 Million Rows / 7.5GB Uncompressed JSONL:** ~1 minute 33 seconds
-    ```
-    ❯ load -f jsonl /path/to/usage_data_5_5m.json
+    ```    ❯ load -f jsonl /path/to/usage_data_5_5m.json
     status=SUCCESS rows_inserted=5.50M file_size=7.5GB file=/path/to/usage_data_5_5m.json ... took=1m33.15s
     ```
 *   **12.55 Million Rows / 17GB Uncompressed JSONL:** ~3 minutes 7 seconds
@@ -113,52 +110,74 @@ These examples show `load`'s performance loading large files on specific hardwar
 *(Note: Example output slightly condensed. Full paths replaced.)*
 </details>
 
+<details open>
+<summary><b><code>CSV</code> File Loading Stats & Comparison</b></summary>
+
+Tests performed using `converted_3m.csv` (3.3 Million rows, ~3.9GB) on the reference hardware.
+
+#### Performance Summary:
+
+| Tool                        | Load Time        | Notes                       |
+| :-------------------------- | :--------------- | :-------------------------- |
+| **`load`**                  | **~41 seconds**  | Average of modes below      |
+| `load` (-t dynamic)         | ~41.3 seconds    | Dynamic type detection      |
+| `load` (-t alltext)         | ~40.7 seconds    | Faster, uses only TEXT type |
+| `timescaledb-parallel-copy` | ~41.4 seconds    | Best result (`--workers 8`) |
+| JetBrains IDE (GoLand)      | ~119 seconds     | Standard GUI import         |
+
+* JetBrains IDE Import Time:
+<br></br>
+![JetBrains IDE import time for 3.3M rows (~2min)](images/jetbrains.png)
+<br></br>
+* `load` Import Time (similar conditions):
+<br></br>
+![pgload import time for 3.3M rows CSV (~41s)](images/load.png)
+<br></br>
+<br>
 <details>
-    <summary><b><code>CSV</code> File Loading Stats</b></summary>
+ <summary><code>timescaledb-parallel-copy</code> import times</summary>
 
-*   **`JetBrains IDE(goland)` ~2min vs `timescaledb-parallel-copy` ~43.5 sec(avg) vs `load` ~41 sec**
-<br></br>
-![alt text](/images/jetbrains.png)
-<br></br>
-![alt text](/images/load.png)
-<br></br>
-## Timescale-db-stats
+**Test Setup:**
+*   **Target Table:** `test3.converted_3m_timescale` (Pre-created with all `TEXT` columns)
 
-*  Created the table `converted_3m_timescale` with the same columns listed in the command, with each column type set as TEXT.
+**Results Summary Table:**
 
-* Runs with different configurations
+| `workers` Flag | `batch-size` Flag | Time Taken (seconds) |
+| :------------- | :---------------- | :------------------- |
+| Default (1)    | Default(5k)           | 45.51s               |
+| 8              | Default           | 41.39s               |
+| 5              | Default           | 45.22s               |
+| 5              | 10000             | 42.07s               |
 
-    ```sh
-    ❯ go run main.go --connection="host=localhost port=5432 user=postgres sslmode=disable" --table converted_3m_timescale --schema test3 --file "converted_3m.csv" "billing_account_id, service, sku, usage_start_time, usage_end_time, project, labels, system_labels, location, resource, tags, price, subscription, transaction_type, export_time, cost, currency, currency_conversion_rate, usage, credits, invoice, cost_type, adjustment_info, cost_at_list" --skip-header true            
-    2025/04/10 00:08:14 Copy command: COPY "test3"."converted_3m_timescale" FROM STDIN WITH DELIMITER ','  CSV
-    2025/04/10 00:08:59 total rows 3300001
-    COPY 3300001 took 45.508942916s
-    ```
+**Raw Command Outputs:**
 
-    ```sh
-    ❯ go run main.go --connection="host=localhost port=5432 user=postgres sslmode=disable" --table converted_3m_timescale --schema test3 --file "converted_3m.csv" "billing_account_id, service, sku, usage_start_time, usage_end_time, project, labels, system_labels, location, resource, tags, price, subscription, transaction_type, export_time, cost, currency, currency_conversion_rate, usage, credits, invoice, cost_type, adjustment_info, cost_at_list" --skip-header true --workers 8
-    2025/04/10 00:02:45 Copy command: COPY "test3"."converted_3m_timescale" FROM STDIN WITH DELIMITER ','  CSV
-    2025/04/10 00:03:26 total rows 3300001
-    COPY 3300001 took 41.389381459s
-    ```
+```bash
+# Default Workers=1
+❯ go run main.go --connection="host=localhost port=5432 user=postgres sslmode=disable" --table converted_3m_timescale --schema test3 --file "/Users/agali/Downloads/temp/my_data/converted_3m.csv" "billing_account_id, service, sku, usage_start_time, usage_end_time, project, labels, system_labels, location, resource, tags, price, subscription, transaction_type, export_time, cost, currency, currency_conversion_rate, usage, credits, invoice, cost_type, adjustment_info, cost_at_list" --skip-header true
+2025/04/10 00:08:14 Copy command: COPY "test3"."converted_3m_timescale" FROM STDIN WITH DELIMITER ','  CSV
+2025/04/10 00:08:59 total rows 3300001
+COPY 3300001 took 45.508942916s
 
-    ```sh
-    ❯ go run main.go --connection="host=localhost port=5432 user=postgres sslmode=disable" --table converted_3m_timescale --schema test3 --file "converted_3m.csv" "billing_account_id, service, sku, usage_start_time, usage_end_time, project, labels, system_labels, location, resource, tags, price, subscription, transaction_type, export_time, cost, currency, currency_conversion_rate, usage, credits, invoice, cost_type, adjustment_info, cost_at_list" --skip-header true --workers 5
-    2025/04/10 00:04:04 Copy command: COPY "test3"."converted_3m_timescale" FROM STDIN WITH DELIMITER ','  CSV
-    2025/04/10 00:04:49 total rows 3300001
-    COPY 3300001 took 45.222426583s
-    ```
+# Workers = 8
+❯ go run main.go --connection="host=localhost port=5432 user=postgres sslmode=disable" --table converted_3m_timescale --schema test3 --file "/Users/agali/Downloads/temp/my_data/converted_3m.csv" "billing_account_id, service, sku, usage_start_time, usage_end_time, project, labels, system_labels, location, resource, tags, price, subscription, transaction_type, export_time, cost, currency, currency_conversion_rate, usage, credits, invoice, cost_type, adjustment_info, cost_at_list" --skip-header true --workers 8
+2025/04/10 00:02:45 Copy command: COPY "test3"."converted_3m_timescale" FROM STDIN WITH DELIMITER ','  CSV
+2025/04/10 00:03:26 total rows 3300001
+COPY 3300001 took 41.389381459s
 
-    ```sh
-    go run main.go --connection="host=localhost port=5432 user=postgres sslmode=disable" --table converted_3m_timescale --schema test3 --file "converted_3m.csv" "billing_account_id, service, sku, usage_start_time, usage_end_time, project, labels, system_labels, location, resource, tags, price, subscription, transaction_type, export_time, cost, currency, currency_conversion_rate, usage, credits, invoice, cost_type, adjustment_info, cost_at_list" --skip-header true --workers 5 --batch-size 10000
-    2025/04/10 00:06:01 Copy command: COPY "test3"."converted_3m_timescale" FROM STDIN WITH DELIMITER ','  CSV
-    2025/04/10 00:06:42 total rows 3300001
-    COPY 3300001 took 42.070157s
-    ```
+# Workers = 5
+❯ go run main.go --connection="host=localhost port=5432 user=postgres sslmode=disable" --table converted_3m_timescale --schema test3 --file "/Users/agali/Downloads/temp/my_data/converted_3m.csv" "billing_account_id, service, sku, usage_start_time, usage_end_time, project, labels, system_labels, location, resource, tags, price, subscription, transaction_type, export_time, cost, currency, currency_conversion_rate, usage, credits, invoice, cost_type, adjustment_info, cost_at_list" --skip-header true --workers 5
+2025/04/10 00:04:04 Copy command: COPY "test3"."converted_3m_timescale" FROM STDIN WITH DELIMITER ','  CSV
+2025/04/10 00:04:49 total rows 3300001
+COPY 3300001 took 45.222426583s
 
-*(CSV loading examples will be added here. Generally, expect faster times than JSONL due to the direct use of `COPY` without the conversion step.)*
+# Workers = 5, Batch Size = 10000
+❯ go run main.go --connection="host=localhost port=5432 user=postgres sslmode=disable" --table converted_3m_timescale --schema test3 --file "/Users/agali/Downloads/temp/my_data/converted_3m.csv" "billing_account_id, service, sku, usage_start_time, usage_end_time, project, labels, system_labels, location, resource, tags, price, subscription, transaction_type, export_time, cost, currency, currency_conversion_rate, usage, credits, invoice, cost_type, adjustment_info, cost_at_list" --skip-header true --workers 5 --batch-size 10000
+2025/04/10 00:06:01 Copy command: COPY "test3"."converted_3m_timescale" FROM STDIN WITH DELIMITER ','  CSV
+2025/04/10 00:06:42 total rows 3300001
+COPY 3300001 took 42.070157s
+```
 </details>
-
+</details>
 
 ## License
 
