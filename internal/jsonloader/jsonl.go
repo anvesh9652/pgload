@@ -16,6 +16,8 @@ import (
 	"github.com/anvesh9652/pgload/pkg/shared"
 	"github.com/anvesh9652/pgload/pkg/shared/reader"
 	"github.com/sourcegraph/conc/pool"
+
+	"github.com/anvesh9652/concurrent-line-processor/examples/codes"
 )
 
 const (
@@ -77,7 +79,7 @@ func (j *JsonLoader) Run(ctx context.Context) (string, error) {
 		p := pool.New().WithErrors().WithFirstError()
 		p.Go(func() error {
 			defer pw.Close()
-			return convertJsonlToCSV(pw, file, cols)
+			return convertJsonlToCSV2(pw, file, cols)
 		})
 
 		rowsInserted, err := csv2.LoadCSV(ctx, pr, name, j.db)
@@ -152,6 +154,16 @@ func convertJsonlToCSV(w io.Writer, file string, cols []string) (err error) {
 		return cw.WriteAll(rows[:idx])
 	}
 	return nil
+}
+
+// 4-10sec faster than convertJsonlToCSV2
+func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
+	r, err := reader.NewFileGzipReader(file)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+	return codes.ConvertJsonlToCsv(cols, r, w)
 }
 
 func toString(val any) string {

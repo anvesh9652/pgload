@@ -13,4 +13,8 @@ func main() {
 
 /*
 Bugs:
+
+Features:
+Intelligent sampling:
+	- read beginning, middle and end, and also btw beg-mid and mid-end(uncommon parts)
 */
