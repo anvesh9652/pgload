@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	version = "1.0.0"
+	version = "1.0.2"
 	example = `1. pgload file1.csv file2.csv file3.csv.gz
 2. pgload -f jsonl file1.json file2.jsonl file3.json.gz
 3. pgload -p 54321 data.csv
