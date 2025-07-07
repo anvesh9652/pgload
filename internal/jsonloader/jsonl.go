@@ -68,8 +68,7 @@ func (j *JsonLoader) Run(ctx context.Context) (string, error) {
 		}
 
 		// Ensure the table exists or create it if necessary.
-		err = j.db.EnsureTable(name, fmt.Sprintf("(%s)", strings.Join(colsTypes, ", ")))
-		if err != nil {
+		if err = j.db.EnsureTable(name, fmt.Sprintf("(%s)", strings.Join(colsTypes, ", "))); err != nil {
 			printError(file, name, err)
 			return err
 		}
@@ -156,7 +155,7 @@ func convertJsonlToCSV(w io.Writer, file string, cols []string) (err error) {
 	return nil
 }
 
-// 4-10sec faster than convertJsonlToCSV2
+// 4-10sec faster than convertJsonlToCSV
 func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
 	r, err := reader.NewFileGzipReader(file)
 	if err != nil {

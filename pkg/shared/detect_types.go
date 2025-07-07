@@ -1,10 +1,11 @@
 package shared
 
 import (
-	"bufio"
 	"io"
 	"strconv"
+	"sync"
 
+	clp "github.com/anvesh9652/concurrent-line-processor"
 	"github.com/anvesh9652/pgload/internal/pgdb/dbv2"
 	"github.com/buger/jsonparser"
 )
@@ -17,16 +18,17 @@ func FindColumnTypes(r io.Reader, rowsReadLimit int, typeSetting string) ([]stri
 
 	// Column and respective types we have encountered.
 	columnTypes := make(map[string]map[string]int)
+	mut := sync.Mutex{}
 
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		data := scanner.Bytes()
-		err := jsonparser.ObjectEach(data, func(key, value []byte, dataType jsonparser.ValueType, offset int) error {
+	lineProcessor := func(b []byte) ([]byte, error) {
+		mut.Lock()
+		defer mut.Unlock()
+		err := jsonparser.ObjectEach(b, func(key, value []byte, dataType jsonparser.ValueType, offset int) error {
 			keyString := string(key)
-
 			if _, exists := columnTypes[keyString]; !exists {
 				columnTypes[keyString] = make(map[string]int)
 			}
+
 			types := columnTypes[keyString]
 			switch dataType {
 			case jsonparser.Number:
@@ -38,20 +40,20 @@ func FindColumnTypes(r io.Reader, rowsReadLimit int, typeSetting string) ([]stri
 			default:
 				types[dbv2.Text]++
 			}
-
 			columnTypes[keyString] = types
 			return nil
 		})
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
-		rowsReadLimit--
-		if rowsReadLimit == 0 {
-			break
-		}
+		return b, nil
 	}
 
-	if err := scanner.Err(); err != nil {
+	cr := clp.NewConcurrentLineProcessor(r,
+		clp.WithWorkers(1024*1024*4), clp.WithWorkers(8),
+		clp.WithRowsReadLimit(rowsReadLimit), clp.WithCustomLineProcessor(lineProcessor),
+	)
+	if _, err := io.Copy(io.Discard, cr); err != nil {
 		return nil, nil, err
 	}
 

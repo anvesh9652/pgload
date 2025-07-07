@@ -166,10 +166,7 @@ func (c *CommandInfo) RunFormatSpecificLoaders(ctx context.Context, cf, jf []str
 
 	err := pool.Wait()
 	fmt.Println(strings.Join(msgs, "\n"))
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func isAcceptableFormat(format string) bool {
