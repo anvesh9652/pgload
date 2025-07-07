@@ -12,11 +12,11 @@ import (
 
 var (
 	version = "1.0.0"
-	example = `1. load file1.csv file2.csv file3.csv.gz
-2. load -f jsonl file1.json file2.jsonl file3.json.gz
-3. load -p 54321 data.csv
-4. load -f both -p 54321 data.csv data.json all_files/*
-5. load -U test -P 123 -d temp -s testing -u "localhost:123" file_2*.csv test1.csv dummy/*/*.csv`
+	example = `1. pgload file1.csv file2.csv file3.csv.gz
+2. pgload -f jsonl file1.json file2.jsonl file3.json.gz
+3. pgload -p 54321 data.csv
+4. pgload -f both -p 54321 data.csv data.json all_files/*
+5. pgload -U test -P 123 -d temp -s testing -u "localhost:123" file_2*.csv test1.csv dummy/*/*.csv`
 )
 
 const (
@@ -33,7 +33,7 @@ const (
 )
 
 var rootCommand = cobra.Command{
-	Use:     "load",
+	Use:     "pgload",
 	Short:   "Efficiently loads data into PostgreSQL",
 	Long:    "Loads the provided CSV and JSONL files data into PostgreSQL tables, leveraging optimized processes for faster performance.",
 	Example: example,

@@ -1,6 +1,6 @@
-# `load`: Faster Loading for CSV & JSONL Data into PostgreSQL
+# `pgload`: Faster Loading for CSV & JSONL Data into PostgreSQL
 
-Loading large `CSV` or `JSONL` files into PostgreSQL can often be a slow process. `load` is a command-line tool designed to help speed this up. It leverages PostgreSQL's efficient `COPY` command and parallel processing to handle large datasets, including multi-gigabyte files with millions of rows, more effectively than standard single-file insertion methods.
+Loading large `CSV` or `JSONL` files into PostgreSQL can often be a slow process. `pgload` is a command-line tool designed to help speed this up. It leverages PostgreSQL's efficient `COPY` command and parallel processing to handle large datasets, including multi-gigabyte files with millions of rows, more effectively than standard single-file insertion methods.
 
 This tool can be particularly helpful when you need to regularly import large data files and want to automate parts of the process, like table creation.
 
@@ -21,14 +21,14 @@ This tool can be particularly helpful when you need to regularly import large da
 Ensure you have Go installed.
 
 ```sh
-go install github.com/anvesh9652/pgload/cmd/load@latest
+go install github.com/anvesh9652/pgload/cmd/pgload@latest
 ```
 
 *(Make sure your Go binary path (`$GOPATH/bin` or `$HOME/go/bin`) is included in your system's `PATH` environment variable.)*
 
 **View Help and Options:**
 ```sh
-load -h
+pgload -h
 ```
 
 ### Command-Line Flags
@@ -56,54 +56,54 @@ Use these flags to customize the loading process:
 ```sh
 # Load multiple CSV files (including a compressed one).
 # Assumes default format ('csv') and connection settings.
-load file1.csv file2.csv file3.csv.gz
+pgload file1.csv file2.csv file3.csv.gz
 
 # Load multiple JSON/JSONL files (including compressed).
 # Explicitly specifies the format using -f jsonl.
-load -f jsonl file1.json file2.jsonl file3.json.gz
+pgload -f jsonl file1.json file2.jsonl file3.json.gz
 
 # Load a CSV file, specifying a non-default PostgreSQL port (54321).
-load -p 54321 data.csv
+pgload -p 54321 data.csv
 
 # Load a mix of CSV and JSONL files (-f both).
 # Specifies a non-default port and uses a glob pattern (*) to include files.
-load -f both -p 54321 data.csv data.json all_files/*
+pgload -f both -p 54321 data.csv data.json all_files/*
 
 # Load CSV files matching patterns, using specific connection parameters:
 # User 'test', Password '123', Database 'temp', Schema 'testing',
 # and connects to PostgreSQL at 'localhost:123'.
-load -U test -P 123 -d temp -s testing -u "localhost:123" file_2*.csv test1.csv dummy/*/*.csv
+pgload -U test -P 123 -d temp -s testing -u "localhost:123" file_2*.csv test1.csv dummy/*/*.csv
 ```
 
 *(Note: Table names are inferred from filenames.)*
 
 ## Loading Speed Stats
 
-These examples show `load`'s performance loading large files on specific hardware (**MacBook Pro 15-inch, M1 Pro, 10 cores, 16GB RAM**). Your results may vary based on your hardware, database configuration, and network.
+These examples show `pgload`'s performance loading large files on specific hardware (**MacBook Pro 15-inch, M1 Pro, 10 cores, 16GB RAM**). Your results may vary based on your hardware, database configuration, and network.
 
 <details>
     <summary><b><code>JSONL</code> File Loading Stats</b></summary>
 
 *   **3.3 Million Rows / 4.5GB Uncompressed JSONL:** ~55 seconds
-    ```    ❯ load -f jsonl /path/to/usage_data_3m.json
+    ```    ❯ pgload -f jsonl /path/to/usage_data_3m.json
     status=SUCCESS rows_inserted=3.30M file_size=4.5GB file=/path/to/usage_data_3m.json ... took=54.72s
     ```
 *   **4.0 Million Rows / 5.5GB Uncompressed JSONL:** ~1 minute 2 seconds
-    ```    ❯ load -f jsonl /path/to/usage_data_4m.json
+    ```    ❯ pgload -f jsonl /path/to/usage_data_4m.json
     status=SUCCESS rows_inserted=4.00M file_size=5.5GB file=/path/to/usage_data_4m.json ... took=1m2.03s
     ```
 *   **5.5 Million Rows / 7.5GB Uncompressed JSONL:** ~1 minute 33 seconds
-    ```    ❯ load -f jsonl /path/to/usage_data_5_5m.json
+    ```    ❯ pgload -f jsonl /path/to/usage_data_5_5m.json
     status=SUCCESS rows_inserted=5.50M file_size=7.5GB file=/path/to/usage_data_5_5m.json ... took=1m33.15s
     ```
 *   **12.55 Million Rows / 17GB Uncompressed JSONL:** ~3 minutes 7 seconds
     ```
-    ❯ load -f jsonl /path/to/usage-data.json
+    ❯ pgload -f jsonl /path/to/usage-data.json
     status=SUCCESS rows_inserted=12.55M file_size=17GB file=/path/to/usage-data.json ... took=3m6.60s
     ```
 *   **12.55 Million Rows / 486MB Compressed (`.gz`) JSONL:** ~3 minutes 11 seconds
     ```
-    ❯ load -s gz -f jsonl /path/to/usage-data.json.gz
+    ❯ pgload -s gz -f jsonl /path/to/usage-data.json.gz
     status=SUCCESS rows_inserted=12.55M file_size=486MB file=/path/to/usage-data.json.gz ... took=3m10.61s
     ```
 
@@ -119,9 +119,9 @@ Tests performed using `converted_3m.csv` (3.3 Million rows, ~3.9GB) on the refer
 
 | Tool                        | Load Time        | Notes                       |
 | :-------------------------- | :--------------- | :-------------------------- |
-| **`load`**                  | **~41 seconds**  | Average of modes below      |
-| `load` (-t dynamic)         | ~41.3 seconds    | Dynamic type detection      |
-| `load` (-t alltext)         | ~40.7 seconds    | Faster, uses only TEXT type |
+| **`pgload`**                  | **~41 seconds**  | Average of modes below      |
+| `pgload` (-t dynamic)         | ~41.3 seconds    | Dynamic type detection      |
+| `pgload` (-t alltext)         | ~40.7 seconds    | Faster, uses only TEXT type |
 | `timescaledb-parallel-copy` | ~41.4 seconds    | Best result (`--workers 8`) |
 | JetBrains IDE (GoLand)      | ~119 seconds     | Standard GUI import         |
 
@@ -129,9 +129,9 @@ Tests performed using `converted_3m.csv` (3.3 Million rows, ~3.9GB) on the refer
 <br></br>
 ![JetBrains IDE import time for 3.3M rows (~2min)](images/jetbrains.png)
 <br></br>
-* `load` Import Time (similar conditions):
+* `pgload` Import Time (similar conditions):
 <br></br>
-![pgload import time for 3.3M rows CSV (~41s)](images/load.png)
+![pgload import time for 3.3M rows CSV (~41s)](images/pgload.png)
 <br></br>
 <br>
 <details>
