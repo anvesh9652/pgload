@@ -3,7 +3,7 @@ module github.com/anvesh9652/pgload
 go 1.24.0
 
 require (
-	github.com/anvesh9652/concurrent-line-processor v1.0.7
+	github.com/anvesh9652/concurrent-line-processor v1.0.10
 	github.com/buger/jsonparser v1.1.1
 	github.com/dustin/go-humanize v1.0.1
 	github.com/jackc/pgx/v5 v5.7.5

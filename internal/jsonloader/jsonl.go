@@ -165,6 +165,20 @@ func convertJsonlToCSV2(w io.Writer, file string, cols []string) (err error) {
 	return codes.ConvertJsonlToCsv(cols, r, w)
 }
 
+
+func (j *JsonLoader) findTypesAndGetCols(file string) ([]string, []string, error) {
+	r, err := reader.NewFileGzipReader(file)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer r.Close()
+
+	// Even though the type setting is text, we should read some rows to find all columns that exist.
+	// In JSONL, a row might have fewer keys, while others might have more keys. So we need all of those keys.
+	return shared.FindColumnTypes(r, j.lookUpSize, j.typeSetting)
+}
+
+
 func toString(val any) string {
 	switch t := val.(type) {
 	case int:
@@ -183,18 +197,6 @@ func toString(val any) string {
 		fmt.Println("entered into default for json files")
 		return fmt.Sprintf("%s", val)
 	}
-}
-
-func (j *JsonLoader) findTypesAndGetCols(file string) ([]string, []string, error) {
-	r, err := reader.NewFileGzipReader(file)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer r.Close()
-
-	// Even though the type setting is text, we should read some rows to find all columns that exist.
-	// In JSONL, a row might have fewer keys, while others might have more keys. So we need all of those keys.
-	return shared.FindColumnTypes(r, j.lookUpSize, j.typeSetting)
 }
 
 func printError(f, name string, err error) {

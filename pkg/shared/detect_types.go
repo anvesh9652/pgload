@@ -50,7 +50,7 @@ func FindColumnTypes(r io.Reader, rowsReadLimit int, typeSetting string) ([]stri
 	}
 
 	cr := clp.NewConcurrentLineProcessor(r,
-		clp.WithWorkers(1024*1024*4), clp.WithWorkers(8),
+		clp.WithChunkSize(1024*1024*4), clp.WithWorkers(8),
 		clp.WithRowsReadLimit(rowsReadLimit), clp.WithCustomLineProcessor(lineProcessor),
 	)
 	if _, err := io.Copy(io.Discard, cr); err != nil {
